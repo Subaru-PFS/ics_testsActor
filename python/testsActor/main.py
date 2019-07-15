@@ -26,14 +26,14 @@ class OurActor(actorcore.ICC.ICC):
 
         self.everConnected = False
 
-    def ownCall(self, cmd, cmdStr, failMsg, timeLim=60):
-        cmdVar = self.cmdr.call(actor=self.name, cmdStr=cmdStr, forUserCmd=cmd, timeLim=timeLim)
+    def safeCall(self, cmd, actorName, cmdStr, timeLim=60):
+        cmdVar = self.cmdr.call(actor=actorName, cmdStr=cmdStr, forUserCmd=cmd, timeLim=timeLim)
 
         ret = cmdVar.replyList[-1].keywords.canonical(delimiter=';')
 
         if cmdVar.didFail:
             cmd.warn(ret)
-            raise RuntimeError(failMsg)
+            raise RuntimeError('cmd : %s %s has failed !!!' % (actorName, cmdStr))
 
         return ret
 

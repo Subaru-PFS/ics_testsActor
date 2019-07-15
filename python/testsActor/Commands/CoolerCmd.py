@@ -2,6 +2,7 @@
 
 
 import opscore.protocols.keys as keys
+import opscore.protocols.types as types
 from enuActor.utils.wrap import threaded
 
 
@@ -17,10 +18,12 @@ class CoolerCmd(object):
         #
         self.name = "cooler"
         self.vocab = [
-            ('cooler', 'test', self.test),
+            ('cooler', '<cam>', self.test),
         ]
 
-        self.keys = keys.KeysDictionary("tests__cooler", (1, 1), )
+        self.keys = keys.KeysDictionary("tests__cooler", (1, 1),
+                                        keys.Key("cam", types.String(),
+                                                 help='camera to test'), )
 
     @property
     def controller(self):
@@ -31,5 +34,8 @@ class CoolerCmd(object):
 
     @threaded
     def test(self, cmd):
-        self.controller.test(cmd=cmd)
-        cmd.finish()
+        cmdKeys = cmd.cmd.keywords
+        cam = cmdKeys['cam'].values[0]
+        self.controller.test(cmd, cam=cam)
+
+        cmd.finish('text="cooler %s OK..."' % cam)
