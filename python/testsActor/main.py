@@ -26,6 +26,13 @@ class OurActor(actorcore.ICC.ICC):
 
         self.everConnected = False
 
+    def requireModel(self, actorName, cmd):
+        """ Make sure that we are listening for a given actor keywords. """
+
+        if actorName not in self.models.keys():
+            cmd.inform(f"text='connecting model for actor {actorName}'")
+            self.addModels([actorName])
+            
     def safeCall(self, cmd, actorName, cmdStr, timeLim=60):
         cmdVar = self.cmdr.call(actor=actorName, cmdStr=cmdStr, forUserCmd=cmd, timeLim=timeLim)
 
