@@ -1,19 +1,20 @@
 import logging
 import time
+
 import pandas as pd
-from actorcore.QThread import QThread
-from enuActor.utils import waitForTcpServer
+from testsActor.utils import waitForTcpServer
 
 
-class cooler(QThread):
+class xcu(object):
     def __init__(self, actor, name, loglevel=logging.DEBUG):
         """This sets up the connections to/from the hub, the logger, and the twisted reactor.
 
         :param actor: spsaitActor
         :param name: controller name
         """
-        self.currCmd = False
-        QThread.__init__(self, actor, name)
+
+        self.actor = actor
+        self.name = name
 
         self.logger = logging.getLogger(self.name)
         self.logger.setLevel(loglevel)
@@ -21,7 +22,7 @@ class cooler(QThread):
     def xcuKey(self, cam, key):
         return self.actor.models['xcu_%s' % cam].keyVarDict[key].getValue()
 
-    def test(self, cmd, cam):
+    def cooler(self, cmd, cam):
         cmd.inform('text="starting %s cooler test' % cam)
 
         name, state, volts, amps, watts = self.xcuKey(cam=cam, key='pcmPort3')
@@ -61,11 +62,7 @@ class cooler(QThread):
         self.actor.safeCall(cmd, actorName='xcu_%s' % cam, cmdStr='monitor controllers=cooler period=15')
 
     def start(self, *args, **kwargs):
-        QThread.start(self)
+        pass
 
     def stop(self, *args, **kwargs):
-        self.exit()
-
-    def handleTimeout(self):
-        if self.exitASAP:
-            raise SystemExit()
+        pass

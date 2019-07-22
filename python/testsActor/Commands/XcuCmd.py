@@ -3,10 +3,9 @@
 
 import opscore.protocols.keys as keys
 import opscore.protocols.types as types
-from enuActor.utils.wrap import threaded
+from testsActor.utils import singleShot
 
-
-class CoolerCmd(object):
+class XcuCmd(object):
     def __init__(self, actor):
         # This lets us access the rest of the actor.
         self.actor = actor
@@ -16,26 +15,29 @@ class CoolerCmd(object):
         # associated methods when matched. The callbacks will be
         # passed a single argument, the parsed and typed command.
         #
-        self.name = "cooler"
         self.vocab = [
-            ('cooler', '<cam>', self.test),
+            ('cooler', '<cam>', self.cooler),
         ]
 
-        self.keys = keys.KeysDictionary("tests__cooler", (1, 1),
+        self.keys = keys.KeysDictionary("tests__xcu", (1, 1),
                                         keys.Key("cam", types.String(),
                                                  help='camera to test'), )
 
     @property
     def controller(self):
         try:
-            return self.actor.controllers[self.name]
+            return self.actor.controllers['xcu']
         except KeyError:
-            raise RuntimeError('%s controller is not connected.' % self.name)
+            raise RuntimeError('xcu controller is not connected.')
 
-    @threaded
-    def test(self, cmd):
+    @singleShot
+    def cooler(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
-        self.controller.test(cmd, cam=cam)
+        try:
+            self.controller.cooler(cmd, cam=cam)
+        except:
+            cmd.warn('test=cooler-%s,FAILED' % cam)
+            raise
 
-        cmd.finish('text="cooler %s OK..."' % cam)
+        cmd.finish('test=cooler-%s,OK' % cam)
