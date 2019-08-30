@@ -18,6 +18,10 @@ class EnuCmd(object):
         #
         self.vocab = [
             ('temps', '@(sm1|sm2|sm3|sm4)', self.temps),
+            ('slit', '@(sm1|sm2|sm3|sm4)', self.slit),
+            ('bia', '@(sm1|sm2|sm3|sm4)', self.bia),
+            ('shutters', '@(sm1|sm2|sm3|sm4)', self.shutters),
+            ('rexm', '@(sm1|sm2|sm3|sm4)', self.rexm),
         ]
 
         self.keys = keys.KeysDictionary("tests__enu", (1, 1),
@@ -47,3 +51,71 @@ class EnuCmd(object):
             raise
 
         cmd.finish('test=temps-%s,OK' % smId)
+
+    @singleShot
+    def slit(self, cmd):
+        cmdKeys = cmd.cmd.keywords
+        smId = None
+        smId = 'sm1' if 'sm1' in cmdKeys else smId
+        smId = 'sm2' if 'sm2' in cmdKeys else smId
+        smId = 'sm3' if 'sm3' in cmdKeys else smId
+        smId = 'sm4' if 'sm4' in cmdKeys else smId
+
+        try:
+            self.controller.slit(cmd, smId=smId)
+        except:
+            cmd.warn('test=slit-%s,FAILED' % smId)
+            raise
+
+        cmd.finish('test=slit-%s,OK' % smId)
+
+    @singleShot
+    def bia(self, cmd):
+        cmdKeys = cmd.cmd.keywords
+        smId = None
+        smId = 'sm1' if 'sm1' in cmdKeys else smId
+        smId = 'sm2' if 'sm2' in cmdKeys else smId
+        smId = 'sm3' if 'sm3' in cmdKeys else smId
+        smId = 'sm4' if 'sm4' in cmdKeys else smId
+
+        try:
+            self.controller.bia(cmd, smId=smId)
+        except:
+            cmd.warn('test=bia-%s,FAILED' % smId)
+            raise
+
+        cmd.finish('test=bia-%s,OK' % smId)
+
+    @singleShot
+    def shutters(self, cmd):
+        cmdKeys = cmd.cmd.keywords
+        smId = None
+        smId = 'sm1' if 'sm1' in cmdKeys else smId
+        smId = 'sm2' if 'sm2' in cmdKeys else smId
+        smId = 'sm3' if 'sm3' in cmdKeys else smId
+        smId = 'sm4' if 'sm4' in cmdKeys else smId
+
+        try:
+            self.controller.shutters(cmd, smId=smId)
+        except:
+            cmd.warn('test=shutters-%s,FAILED' % smId)
+            raise
+
+        cmd.finish('test=shutters-%s,OK' % smId)
+
+    @singleShot
+    def rexm(self, cmd):
+        cmdKeys = cmd.cmd.keywords
+        smId = None
+        smId = 'sm1' if 'sm1' in cmdKeys else smId
+        smId = 'sm2' if 'sm2' in cmdKeys else smId
+        smId = 'sm3' if 'sm3' in cmdKeys else smId
+        smId = 'sm4' if 'sm4' in cmdKeys else smId
+
+        try:
+            self.controller.rexm(cmd, smId=smId)
+        except:
+            cmd.warn('test=rexm-%s,FAILED' % smId)
+            raise
+
+        cmd.finish('test=rexm-%s,OK' % smId)
