@@ -81,7 +81,7 @@ class enu(object):
         state = self.enuKey(smId=smId, key='bia')
 
         if state != 'off':
-            raise ValueError('BIA should be at off')
+            raise ValueError('BIA should be switched off')
 
         cmd.inform('text="bia status OK, turning it on ..."')
         self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='bia strobe off')
@@ -102,6 +102,31 @@ class enu(object):
             raise RuntimeError('photores 2 is not detecting light')
 
         self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='bia off')
+
+    def shutters(self, cmd, smId, exptime=5.0):
+        cmd.inform('text="starting shutters-%s test' % smId)
+
+        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='biasha start')
+
+        state = self.enuKey(smId=smId, key='shutters')
+
+        if state != 'close':
+            raise ValueError('shutters should be in closed position')
+
+        cmd.inform('text="shutters status OK, testing exposure..."')
+
+        for shutter in ['', 'blue', 'red']:
+            time.sleep(1)
+            cmd.inform(f'text="testing {shutter} shutter"')
+            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr=f'shutters expose exptime={exptime} {shutter}')
+            delta = np.abs(self.enuKey(smId=smId, key='exptime') - exptime)
+            if delta > 0.1:
+                raise ValueError('exposure time is not set correctly')
+
+            cmd.inform(f'text="exptime error = {np.round(delta, 3)} s"')
+
+            if self.enuKey(smId=smId, key='transientTime') > 1.0:
+                raise ValueError(f'shutter {shutter} speed is too slow')
 
     def start(self, *args, **kwargs):
         pass
