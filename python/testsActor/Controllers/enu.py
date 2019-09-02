@@ -43,7 +43,7 @@ class enu(object):
             time.sleep(3)
 
     def slit(self, cmd, smId):
-        cmd.inform('text="starting temps-%s test' % smId)
+        cmd.inform('text="starting slit-%s test' % smId)
 
         self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='slit start')
 
@@ -72,7 +72,36 @@ class enu(object):
         cmd.inform(f'text="moving to home')
         self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='slit move home')
 
+    def bia(self, cmd, smId):
+        thr = 600
+        cmd.inform('text="starting bia-%s test' % smId)
 
+        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='biasha start')
+
+        state = self.enuKey(smId=smId, key='bia')
+
+        if state != 'off':
+            raise ValueError('BIA should be at off')
+
+        cmd.inform('text="bia status OK, turning it on ..."')
+        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='bia strobe off')
+        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='bia on power=100')
+
+        data = []
+        for i in range(5):
+            time.sleep(3)
+            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='bia status')
+            data.append(self.enuKey(smId=smId, key='photores'))
+            cmd.inform('photores=%d,%d' % (data[-1][0], data[-1][1]))
+
+        data = np.array(data)
+
+        if np.mean(data[:, 0]) < thr:
+            raise RuntimeError('photores 1 is not detecting light')
+        if np.mean(data[:, 1]) < thr:
+            raise RuntimeError('photores 2 is not detecting light')
+
+        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='bia off')
 
     def start(self, *args, **kwargs):
         pass
