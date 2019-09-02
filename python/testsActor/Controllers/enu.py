@@ -128,6 +128,31 @@ class enu(object):
             if self.enuKey(smId=smId, key='transientTime') > 1.0:
                 raise ValueError(f'shutter {shutter} speed is too slow')
 
+    def rexm(self, cmd, smId):
+        cmd.inform('text="starting rexm-%s test' % smId)
+
+        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='rexm start', timeLim=180)
+
+        position = self.enuKey(smId=smId, key='rexm')
+
+        if position != 'low':
+            raise ValueError('rexm should be in low position')
+
+        cmd.inform('text="rexm status OK, testing motion..."')
+
+        for position in ['med', 'low']:
+            start = time.time()
+            cmd.inform(f'text="going to {position} position"')
+            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr=f'rexm {position}', timeLim=180)
+            end = time.time()
+            time.sleep(3)
+            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr=f'rexm status')
+
+            if self.enuKey(smId=smId, key='rexm') != position:
+                raise ValueError(f'rexm should be in {position} position')
+
+            cmd.inform(f'text="rexm motion completed in {round(end - start, 1)} s')
+
     def start(self, *args, **kwargs):
         pass
 
