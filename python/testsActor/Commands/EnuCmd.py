@@ -22,6 +22,7 @@ class EnuCmd(object):
             ('bia', '@(sm1|sm2|sm3|sm4)', self.bia),
             ('shutters', '@(sm1|sm2|sm3|sm4)', self.shutters),
             ('rexm', '@(sm1|sm2|sm3|sm4)', self.rexm),
+            ('iis', '@(sm1|sm2|sm3|sm4)', self.iis),
         ]
 
         self.keys = keys.KeysDictionary("tests__enu", (1, 1),
@@ -119,3 +120,20 @@ class EnuCmd(object):
             raise
 
         cmd.finish('test=rexm-%s,OK' % smId)
+
+    @singleShot
+    def iis(self, cmd):
+        cmdKeys = cmd.cmd.keywords
+        smId = None
+        smId = 'sm1' if 'sm1' in cmdKeys else smId
+        smId = 'sm2' if 'sm2' in cmdKeys else smId
+        smId = 'sm3' if 'sm3' in cmdKeys else smId
+        smId = 'sm4' if 'sm4' in cmdKeys else smId
+
+        try:
+            self.controller.iis(cmd, smId=smId)
+        except:
+            cmd.warn('test=iis-%s,FAILED' % smId)
+            raise
+
+        cmd.finish('test=iis-%s,OK' % smId)
