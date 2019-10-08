@@ -1,8 +1,22 @@
 import socket
 import time
+import numpy as np
 from functools import partial
 
 from actorcore.QThread import QThread
+from opscore.protocols import types
+
+def wait():
+    time.sleep(3)
+
+
+def newRow(valueList):
+    valueList = sum(valueList, [])
+    for i, value in enumerate(valueList):
+        if isinstance(value, types.Invalid):
+            valueList[i] = np.nan
+
+    return tuple(valueList)
 
 
 def connectSock(host, port, timeout=1):
