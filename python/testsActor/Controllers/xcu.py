@@ -1,11 +1,19 @@
 import logging
-import time
 
-import pandas as pd
 from testsActor.utils import waitForTcpServer
 
 
 class xcu(object):
+    probeNames = ['detectorBox',
+                  'mangin',
+                  'spider',
+                  'thermalSpreader',
+                  'frontRing',
+                  None, None, None, None, None,
+                  'detectorStrap1',
+                  'detectorStrap2']
+    coolerLabels = ['coolerSetpoint', 'coolerReject', 'coolerTip', 'coolerPower']
+
     def __init__(self, actor, name, loglevel=logging.DEBUG):
         """This sets up the connections to/from the hub, the logger, and the twisted reactor.
 
@@ -29,15 +37,14 @@ class xcu(object):
 
         if not int(state):
             cmd.inform('text="powering up cooler controller"')
-            self.actor.safeCall(cmd, actorName='xcu_%s' % cam, cmdStr='power on cooler')
+            self.actor.safeCall(forUserCmd=cmd, actor='xcu_%s' % cam, cmdStr='power on cooler')
 
         cmd.inform('text="checking cooler tcp server"')
         waitForTcpServer(host='cooler-%s' % cam, port=10001)
 
         cmd.inform('text="connecting cooler controller"')
-        self.actor.safeCall(cmd, actorName='xcu_%s' % cam, cmdStr='connect controller=cooler')
-
-        self.actor.safeCall(cmd, actorName='xcu_%s' % cam, cmdStr='cooler status')
+        self.actor.safeCall(forUserCmd=cmd, actor='xcu_%s' % cam, cmdStr='connect controller=cooler')
+        self.actor.safeCall(forUserCmd=cmd, actor='xcu_%s' % cam, cmdStr='cooler status')
 
         state, errorMask, errorStr, minPower, maxPower, power = self.xcuKey(cam=cam, key='coolerStatus')
 
@@ -46,20 +53,59 @@ class xcu(object):
 
         cmd.inform('text="cooler status OK, retrieving data ..."')
 
-        data = []
-        columns = ['setpoint', 'reject', 'tip', 'power']
-        for i in range(3):
-            self.actor.safeCall(cmd, actorName='xcu_%s' % cam, cmdStr='cooler status')
-            row = self.xcuKey(cam=cam, key='coolerTemps')
-            data.append(row)
-            cmd.inform('coolerTemps=%s' % ','.join(['%.3f' % v for v in row]))
-            time.sleep(3)
+        keys = ['coolerTemps']
+        labels = [f'{cam}__{label}' for label in xcu.coolerLabels]
 
-        data = pd.DataFrame(data=data, columns=columns)
-        for col in columns:
-            cmd.inform('%s=%.3f,%.3f' % (col, data[col].mean(), data[col].std()))
+        df = self.actor.sampleData(cmd, actor='xcu_%s' % cam, cmdStr='cooler status', keys=keys, labels=labels)
+        self.actor.genSample(cmd=cmd, df=df)
 
-        self.actor.safeCall(cmd, actorName='xcu_%s' % cam, cmdStr='monitor controllers=cooler period=15')
+        self.actor.safeCall(forUserCmd=cmd, actor='xcu_%s' % cam, cmdStr='monitor controllers=cooler period=15')
+
+    def gauge(self, cmd, cam):
+        cmd.inform('text="starting %s gauge test' % cam)
+
+        cmd.inform('text="checking pcm tcp server"')
+        waitForTcpServer(host='pcm-%s' % cam, port=1000)
+
+        self.actor.safeCall(forUserCmd=cmd, actor='xcu_%s' % cam, cmdStr='gauge status')
+
+        pressure = self.xcuKey(cam=cam, key='pressure')
+        cmd.inform('text="gauge status OK, retrieving data ..."')
+
+        keys = ['pressure']
+        labels = [f'{cam}__gauge']
+
+        df = self.actor.sampleData(cmd, actor='xcu_%s' % cam, cmdStr='gauge status', keys=keys, labels=labels)
+        self.actor.genSample(cmd=cmd, df=df)
+
+        self.actor.safeCall(forUserCmd=cmd, actor='xcu_%s' % cam, cmdStr='monitor controllers=gauge period=15')
+
+    def temps(self, cmd, cam):
+        cmd.inform('text="starting %s temps test' % cam)
+
+        name, state, volts, amps, watts = self.xcuKey(cam=cam, key='pcmPort4')
+
+        if not int(state):
+            cmd.inform('text="powering up temps controller"')
+            self.actor.safeCall(forUserCmd=cmd, actor='xcu_%s' % cam, cmdStr='power on temps')
+
+        cmd.inform('text="checking temps tcp server"')
+        waitForTcpServer(host='temps-%s' % cam, port=1024)
+
+        cmd.inform('text="connecting temps controller"')
+        self.actor.safeCall(forUserCmd=cmd, actor='xcu_%s' % cam, cmdStr='connect controller=temps')
+        self.actor.safeCall(forUserCmd=cmd, actor='xcu_%s' % cam, cmdStr='temps status')
+
+        temps = self.xcuKey(cam=cam, key='temps')
+        cmd.inform('text="temps status OK, retrieving data ..."')
+
+        keys = ['temps']
+        labels = [f'{cam}__{label}' for label in xcu.probeNames]
+
+        df = self.actor.sampleData(cmd, actor='xcu_%s' % cam, cmdStr='temps status', keys=keys, labels=labels)
+        self.actor.genSample(cmd=cmd, df=df)
+
+        self.actor.safeCall(forUserCmd=cmd, actor='xcu_%s' % cam, cmdStr='monitor controllers=temps period=15')
 
     def start(self, *args, **kwargs):
         pass

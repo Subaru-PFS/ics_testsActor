@@ -17,6 +17,9 @@ class XcuCmd(object):
         #
         self.vocab = [
             ('cooler', '<cam>', self.cooler),
+            ('gauge', '<cam>', self.gauge),
+            ('temps', '<cam>', self.temps),
+            
         ]
 
         self.keys = keys.KeysDictionary("tests__xcu", (1, 1),
@@ -41,3 +44,27 @@ class XcuCmd(object):
             raise
 
         cmd.finish('test=cooler-%s,OK' % cam)
+
+    @singleShot
+    def gauge(self, cmd):
+        cmdKeys = cmd.cmd.keywords
+        cam = cmdKeys['cam'].values[0]
+        try:
+            self.controller.gauge(cmd, cam=cam)
+        except:
+            cmd.warn('test=gauge-%s,FAILED' % cam)
+            raise
+
+        cmd.finish('test=gauge-%s,OK' % cam)
+
+    @singleShot
+    def temps(self, cmd):
+        cmdKeys = cmd.cmd.keywords
+        cam = cmdKeys['cam'].values[0]
+        try:
+            self.controller.temps(cmd, cam=cam)
+        except:
+            cmd.warn('test=temps-%s,FAILED' % cam)
+            raise
+
+        cmd.finish('test=temps-%s,OK' % cam)
