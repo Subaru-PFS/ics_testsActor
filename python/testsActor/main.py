@@ -21,11 +21,12 @@ class OurActor(actorcore.ICC.ICC):
 
         enus = ['enu_sm%i' % i for i in specIds]
         xcus = ['xcu_%s' % cam for cam in cams]
+        ccds = ['ccd_%s' % cam for cam in cams]
 
         actorcore.ICC.ICC.__init__(self, name,
                                    productName=productName,
                                    configFile=configFile,
-                                   modelNames=enus + xcus)
+                                   modelNames=enus + xcus + ccds)
 
         self.logger.setLevel(logLevel)
 
