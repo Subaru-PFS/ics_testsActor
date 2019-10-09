@@ -83,7 +83,7 @@ class OurActor(actorcore.ICC.ICC):
                 gen = cmd.warn
                 failed.append(col)
 
-            gen(f'{col}={round(values.mean(), 3)},{round(values.std(), 2)}')
+            gen(f'{col}={round(values.mean(), 4)},{round(values.std(), 3)}')
 
         if failed:
             raise RuntimeError(f'{", ".join(failed)} are invalid')
