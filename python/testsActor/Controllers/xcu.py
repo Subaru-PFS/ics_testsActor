@@ -172,6 +172,10 @@ class xcu(object):
 
         self.actor.safeCall(forUserCmd=cmd, actor=f'xcu_{cam}', cmdStr='monitor controllers=gauge period=15')
 
+        pressure = df[f'{cam}__gauge'].astype('float64').mean()
+        if pressure < 0:
+            raise ValueError(f'pressure : {pressure} is incorrect')
+
     def cooler(self, cmd, cam):
         cmd.inform(f'text="starting {cam} cooler test')
 

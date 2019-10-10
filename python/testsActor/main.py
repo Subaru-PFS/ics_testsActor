@@ -10,6 +10,7 @@ import pandas as pd
 
 from testsActor.utils import newRow, wait
 
+
 class OurActor(actorcore.ICC.ICC):
     niter = 3
 
@@ -52,7 +53,7 @@ class OurActor(actorcore.ICC.ICC):
 
         return cmdVar
 
-    def sampleData(self, cmd, actor, cmdStr, keys, labels=None):
+    def sampleData(self, cmd, actor, cmdStr, keys, labels):
         doRaise = False
         keyVarDict = self.models[actor].keyVarDict
         cmdVar = self.safeCall(forUserCmd=cmd, actor=actor, cmdStr=cmdStr)
@@ -65,12 +66,11 @@ class OurActor(actorcore.ICC.ICC):
             data.append(newRow([list(keyVarDict[key].valueList) for key in keys]))
 
         data = np.array(data)
-        columns = sum([[f'{actor}__{key}__{val.name}' for val in keyVarDict[key].valueList] for key in keys], [])
-        columns = labels if labels is not None else columns
+        #columns = sum([[f'{actor}__{key}__{val.name}' for val in keyVarDict[key].valueList] for key in keys], [])
 
-        return pd.DataFrame(data=data, columns=columns)
+        return pd.DataFrame(data=data, columns=labels)
 
-    def genSample(self, cmd, df):
+    def genSample(self, cmd, df, fmt='{:g}'):
         failed = []
         for col in df.columns:
 
@@ -83,7 +83,7 @@ class OurActor(actorcore.ICC.ICC):
                 gen = cmd.warn
                 failed.append(col)
 
-            gen(f'{col}={round(values.mean(), 4)},{round(values.std(), 3)}')
+            gen("%s=%s,%s" % (col, fmt.format(values.mean()), fmt.format(values.std())))
 
         if failed:
             raise RuntimeError(f'{", ".join(failed)} are invalid')

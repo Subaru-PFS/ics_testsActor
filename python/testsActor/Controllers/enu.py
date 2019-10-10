@@ -8,7 +8,7 @@ from testsActor.utils import wait
 class enu(object):
     lamps = ['hgar']
     biaThresh = 800
-    iisThresh = 300
+    iisThresh = 3
     probeNames = ['MOTOR_RDA',
                   'MOTOR_SHUTTER_B',
                   'MOTOR_SHUTTER_R',
@@ -30,7 +30,7 @@ class enu(object):
                   'BENCH_CENTRAL_BOTTOM',
                   None]
     biaLabels = ['biaPhoto1', 'biaPhoto2']
-    pduPort8 = [None, None, None, 'iisHgarCurrent', 'iisHgarPower']
+    pduPort8 = [None, None, 'iisHgarVolts', 'iisHgarCurrent', 'iisHgarPower']
 
     def __init__(self, actor, name, loglevel=logging.DEBUG):
         """This sets up the connections to/from the hub, the logger, and the twisted reactor.

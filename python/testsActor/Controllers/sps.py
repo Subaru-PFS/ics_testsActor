@@ -1,9 +1,13 @@
 import logging
 import os
+
 from astropy.io import fits
 
+
 class sps(object):
-    fitsKeys = ['SIMPLE', 'BITPIX', 'NAXIS', 'NAXIS1', 'NAXIS2', 'W_PFDSGN', 'IMAGETYP', 'DATE-OBS', 'EXPTIME']
+    fitsKeys = ['SIMPLE', 'BITPIX', 'NAXIS', 'NAXIS1', 'NAXIS2', 'HEADVERS', 'SPECNUM', 'DEWARNAM', 'ARM', 'DETNUM',
+                'DATE-OBS', 'IMAGETYP', 'EXPTIME', 'DARKTIME', 'W_PFDSGN', 'W_VISIT']
+
     def __init__(self, actor, name, loglevel=logging.DEBUG):
         """This sets up the connections to/from the hub, the logger, and the twisted reactor.
 
@@ -32,7 +36,9 @@ class sps(object):
         hdulist = fits.open(filepath, "readonly")
         prihdr = hdulist[0].header
 
-        if prihdr['IMAGETYP'] !='bias':
+        cmd.inform(f'filepath={filepath}')
+
+        if prihdr['IMAGETYP'] != 'bias':
             raise ValueError(f'IMAGETYP is incorrected {prihdr["IMAGETYP"]}')
 
         if prihdr['EXPTIME'] != 0:
@@ -45,18 +51,18 @@ class sps(object):
             except KeyError:
                 val = 'Undefined'
 
-            if 'Undefined' in val:
+            if 'Undefined' in str(val):
                 missing.append(key)
                 gen = cmd.warn
-            
+
             gen(f'{key}={val}')
-        
+
         if missing:
             raise RuntimeError(f'{", ".join(missing)} are missing')
 
     def dark(self, cmd, cam):
         missing = []
-        exptime=10.0
+        exptime = 10.0
         cmd.inform('text="starting %s dark test' % cam)
 
         self.actor.safeCall(forUserCmd=cmd, actor='sps', cmdStr=f'expose dark exptime={exptime} cam={cam}')
@@ -67,10 +73,12 @@ class sps(object):
         hdulist = fits.open(filepath, "readonly")
         prihdr = hdulist[0].header
 
+        cmd.inform(f'filepath={filepath}')
+
         if prihdr['IMAGETYP'] != 'dark':
             raise ValueError(f'IMAGETYP is incorrected {prihdr["IMAGETYP"]}')
 
-        if abs(prihdr['EXPTIME']-exptime)>0.5:
+        if abs(prihdr['EXPTIME'] - exptime) > 0.5:
             raise ValueError(f'EXPTIME is incorrected {prihdr["EXPTIME"]}')
 
         for key in sps.fitsKeys:
@@ -80,7 +88,7 @@ class sps(object):
             except KeyError:
                 val = 'Undefined'
 
-            if 'Undefined' in val:
+            if 'Undefined' in str(val):
                 missing.append(key)
                 gen = cmd.warn
 
