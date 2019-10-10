@@ -14,11 +14,26 @@ class alerts(QThread):
 
         self.logger = logging.getLogger(self.name)
         self.logger.setLevel(loglevel)
+        self.monitor = True
 
     def generate(self, cmd):
-        cmd.inform('keytest1=-99,10,23')
-        cmd.inform('keytest2=23.3,nan')
-        cmd.finish('keytest3=3.193e-05')
+        cmd.inform('keytest1=163.2,165.35')
+        cmd.inform('keytest2=1e-7')
+        cmd.finish('keytest3=Closed,OK')
+
+    def trigger(self, cmd):
+        cmd.inform('keytest1=210.89,180.65')
+        cmd.inform('keytest2=10.2')
+        cmd.inform('keytest3=Open,"Status is not OK !! "')
+
+    def invalid(self, cmd):
+        cmd.inform('keytest1=nan,nan')
+        cmd.inform('keytest2=nan')
+        cmd.inform('keytest3=Closed,OK')
+
+    def timeout(self, cmd):
+        cmd.inform('text="stopping monitoring"')
+        self.monitor = False
 
     def handleTimeout(self, cmd=None):
         if self.exitASAP:
