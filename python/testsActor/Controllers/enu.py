@@ -2,17 +2,35 @@ import logging
 import time
 
 import numpy as np
-
-
-def wait():
-    time.sleep(3)
+from testsActor.utils import wait
 
 
 class enu(object):
     lamps = ['hgar']
     biaThresh = 800
     iisThresh = 3
-    niter = 3
+    probeNames = ['MOTOR_RDA',
+                  'MOTOR_SHUTTER_B',
+                  'MOTOR_SHUTTER_R',
+                  'BIA_BOX_UPPER',
+                  'BIA_BOX_LOWER',
+                  'FIBER_UNIT_BENCH_LEVEL',
+                  'FIBER_UNIT_HEXAPOD_TOP',
+                  'FIBER_UNIT_FIBER_FRAME_TOP',
+                  'COLLIMATOR_FRAME_BENCH_LEVEL',
+                  'COLLIMATOR_FRAME_TOP',
+                  'BENCH_LEFT_TOP',
+                  'BENCH_LEFT_BOTTOM',
+                  'BENCH_RIGHT_TOP',
+                  'BENCH_RIGHT_BOTTOM',
+                  'BENCH_FAR_TOP',
+                  'BENCH_FAR_BOTTOM',
+                  'BENCH_NEAR_TOP',
+                  'BENCH_NEAR_BOTTOM',
+                  'BENCH_CENTRAL_BOTTOM',
+                  None]
+    biaLabels = ['biaPhoto1', 'biaPhoto2']
+    pduPort8 = [None, None, 'iisHgarVolts', 'iisHgarCurrent', 'iisHgarPower']
 
     def __init__(self, actor, name, loglevel=logging.DEBUG):
         """This sets up the connections to/from the hub, the logger, and the twisted reactor.
@@ -30,44 +48,24 @@ class enu(object):
     def enuKey(self, smId, key):
         return self.actor.models['enu_%s' % smId].keyVarDict[key].getValue()
 
-    def temps(self, cmd, smId):
-        cmd.inform('text="starting temps-%s test' % smId)
-
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='temps start')
-
-        errorCode, errorMsg = self.enuKey(smId=smId, key='tempsStatus')
-
-        if errorMsg != 'No error':
-            raise ValueError('Temps status is not OK : %s' % errorMsg)
-
-        cmd.inform('text="temps status OK, retrieving data ..."')
-
-        data = []
-
-        for i in range(enu.niter):
-            wait()
-            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='temps status')
-            row = self.enuKey(smId=smId, key='temps1') + self.enuKey(smId=smId, key='temps2')
-            data.append(row)
-            cmd.inform('temps=%s' % ','.join(['%.3f' % v for v in row]))
-
     def slit(self, cmd, smId):
+
         cmd.inform('text="starting slit-%s test' % smId)
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='slit start')
+        self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='slit start')
 
         if self.enuKey(smId=smId, key='slitPosition') != 'home':
             raise ValueError('Slit should be at home')
 
         cmd.inform('text="slit status OK, testing motion ..."')
 
-        for i in range(enu.niter):
+        for i in range(self.actor.niter):
             wait()
             p = np.zeros(6)
             p[i] = 1
             cmdStr = f'X={p[0]}  Y={p[1]}  Z={p[2]}  U={p[3]}  V={p[4]}  W={p[5]}'
             cmd.inform(f'text="moving to {cmdStr}')
-            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr=f'slit move absolute {cmdStr}')
-            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr=f'slit status')
+            self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr=f'slit move absolute {cmdStr}')
+            self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr=f'slit status')
 
             c = np.array(self.enuKey(smId=smId, key='slit'))
             delta = np.sum(np.abs(p - c))
@@ -78,38 +76,54 @@ class enu(object):
 
         wait()
         cmd.inform(f'text="moving to home')
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='slit move home')
+        self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='slit move home')
+
+    def temps(self, cmd, smId):
+        cmd.inform('text="starting temps-%s test' % smId)
+
+        self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='temps start')
+
+        errorCode, errorMsg = self.enuKey(smId=smId, key='tempsStatus')
+
+        if errorMsg != 'No error':
+            raise ValueError('Temps status is not OK : %s' % errorMsg)
+
+        cmd.inform('text="temps status OK, retrieving data ..."')
+
+        keys = ['temps1', 'temps2']
+        labels = [f'{smId}__{probeName}' for probeName in enu.probeNames]
+
+        df = self.actor.sampleData(cmd, actor='enu_%s' % smId, cmdStr='temps status', keys=keys, labels=labels)
+        self.actor.genSample(cmd=cmd, df=df)
 
     def bia(self, cmd, smId):
         cmd.inform('text="starting bia-%s test' % smId)
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='biasha start')
+        self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='biasha start')
 
         if self.enuKey(smId=smId, key='bia') != 'off':
             raise ValueError('BIA should be switched off')
 
         cmd.inform('text="bia status OK, turning it on ..."')
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='bia strobe off')
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='bia on power=100')
+        self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='bia strobe off')
+        self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='bia on power=100')
 
-        data = []
-        for i in range(enu.niter):
-            wait()
-            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='bia status')
-            data.append(self.enuKey(smId=smId, key='photores'))
-            cmd.inform('photores=%d,%d' % (data[-1][0], data[-1][1]))
+        keys = ['photores']
+        labels = [f'{smId}__{colname}' for colname in enu.biaLabels]
 
-        data = np.array(data)
+        df = self.actor.sampleData(cmd, actor='enu_%s' % smId, cmdStr='bia status', keys=keys, labels=labels)
+        self.actor.genSample(cmd=cmd, df=df)
 
-        if np.mean(data[:, 0]) < enu.biaThresh:
-            raise RuntimeError('photores 1 is not detecting light')
-        if np.mean(data[:, 1]) < enu.biaThresh:
-            raise RuntimeError('photores 2 is not detecting light')
+        try:
+            for col in df.columns:
+                if df[col].mean() < enu.biaThresh:
+                    raise RuntimeError(f'{col} is not detecting light')
 
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='bia off')
+        finally:
+            self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='bia off')
 
     def shutters(self, cmd, smId, exptime=5.0):
         cmd.inform('text="starting shutters-%s test' % smId)
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='biasha start')
+        self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='biasha start')
 
         if self.enuKey(smId=smId, key='shutters') != 'close':
             raise ValueError('shutters should be in closed position')
@@ -119,7 +133,8 @@ class enu(object):
         for shutter in ['', 'blue', 'red']:
             wait()
             cmd.inform(f'text="testing {shutter} shutter"')
-            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr=f'shutters expose exptime={exptime} {shutter}')
+            self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId,
+                                cmdStr=f'shutters expose exptime={exptime} {shutter}')
             delta = np.abs(self.enuKey(smId=smId, key='exptime') - exptime)
             if delta > 0.1:
                 raise ValueError('exposure time is not set correctly')
@@ -131,7 +146,7 @@ class enu(object):
 
     def rexm(self, cmd, smId):
         cmd.inform('text="starting rexm-%s test' % smId)
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='rexm start', timeLim=180)
+        self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='rexm start', timeLim=180)
 
         if self.enuKey(smId=smId, key='rexm') != 'low':
             raise ValueError('rexm should be in low position')
@@ -142,9 +157,9 @@ class enu(object):
             wait()
             start = time.time()
             cmd.inform(f'text="going to {position} position"')
-            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr=f'rexm {position}', timeLim=180)
+            self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr=f'rexm {position}', timeLim=180)
             end = time.time()
-            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr=f'rexm status')
+            self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr=f'rexm status')
 
             if self.enuKey(smId=smId, key='rexm') != position:
                 raise ValueError(f'rexm should be in {position} position')
@@ -153,29 +168,30 @@ class enu(object):
 
     def iis(self, cmd, smId):
         cmd.inform('text="starting iis-%s test' % smId)
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='iis start')
+        self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='iis start')
 
         for lamp in enu.lamps:
             if self.enuKey(smId=smId, key=lamp):
                 raise ValueError(f'{lamp} should be off')
 
         cmd.inform('text="iis status OK, warming up lamp..."')
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='iis on=%s' % ','.join(enu.lamps))
+        self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='iis on=%s' % ','.join(enu.lamps))
 
-        data = []
-        for i in range(enu.niter):
-            wait()
-            self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='power status')
-            __, __, v, a, w = self.enuKey(smId=smId, key='pduPort8')
-            data.append((v, a, w))
-            cmd.inform(f'pduPort8={v},{a},{w}')
+        keys = ['pduPort8']
+        labels = [f'{smId}__{colname}' for colname in enu.pduPort8]
 
-        data = np.array(data)
+        df = self.actor.sampleData(cmd, actor='enu_%s' % smId, cmdStr='power status', keys=keys, labels=labels)
+        self.actor.genSample(cmd=cmd, df=df)
 
-        if np.mean(data[:, 2]) < enu.iisThresh:
-            raise RuntimeError('iis is not getting any power')
+        try:
+            power = df[np.array(df.columns[df.columns.str.contains('Power')])]
+            for col in power.columns:
+                if power[col].astype('float64').mean() < enu.iisThresh:
+                    raise RuntimeError(f'{col} < {enu.iisThresh} !')
 
-        self.actor.safeCall(cmd, actorName='enu_%s' % smId, cmdStr='iis off=%s' % ','.join(enu.lamps))
+        finally:
+            self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='iis off=%s' % ','.join(enu.lamps))
+
 
     def start(self, *args, **kwargs):
         pass

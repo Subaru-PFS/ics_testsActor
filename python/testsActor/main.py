@@ -5,22 +5,29 @@ import argparse
 import logging
 
 import actorcore.ICC
+import numpy as np
+import pandas as pd
+
+from testsActor.utils import newRow, wait
 
 
 class OurActor(actorcore.ICC.ICC):
+    niter = 3
+
     def __init__(self, name, productName=None, configFile=None, logLevel=logging.INFO):
         # This sets up the connections to/from the hub, the logger, and the twisted reactor.
         #
-        specIds = [i + 1 for i in range(4)]
+        specIds = [i + 1 for i in range(1)]
         cams = ['b%i' % i for i in specIds] + ['r%i' % i for i in specIds]
 
         enus = ['enu_sm%i' % i for i in specIds]
-        ccds = ['xcu_%s' % cam for cam in cams]
+        xcus = ['xcu_%s' % cam for cam in cams]
+        ccds = ['ccd_%s' % cam for cam in cams]
 
         actorcore.ICC.ICC.__init__(self, name,
                                    productName=productName,
                                    configFile=configFile,
-                                   modelNames=enus + ccds)
+                                   modelNames=enus + xcus + ccds)
 
         self.logger.setLevel(logLevel)
 
@@ -32,17 +39,54 @@ class OurActor(actorcore.ICC.ICC):
         if actorName not in self.models.keys():
             cmd.inform(f"text='connecting model for actor {actorName}'")
             self.addModels([actorName])
-            
-    def safeCall(self, cmd, actorName, cmdStr, timeLim=60):
-        cmdVar = self.cmdr.call(actor=actorName, cmdStr=cmdStr, forUserCmd=cmd, timeLim=timeLim)
 
-        ret = cmdVar.replyList[-1].keywords.canonical(delimiter=';')
+    def safeCall(self, **kwargs):
+        cmd = kwargs["forUserCmd"]
+        kwargs["timeLim"] = 300 if "timeLim" not in kwargs.keys() else kwargs["timeLim"]
+
+        cmdVar = self.cmdr.call(**kwargs)
 
         if cmdVar.didFail:
-            cmd.warn(ret)
-            raise RuntimeError('cmd : %s %s has failed !!!' % (actorName, cmdStr))
+            repStr = cmdVar.replyList[-1].keywords.canonical(delimiter=';')
+            cmd.warn(repStr.replace('command failed', f'{kwargs["actor"]} {kwargs["cmdStr"].split(" ", 1)[0]} failed'))
+            raise RuntimeError
 
-        return ret
+        return cmdVar
+
+    def sampleData(self, cmd, actor, cmdStr, keys, labels):
+        doRaise = False
+        keyVarDict = self.models[actor].keyVarDict
+        cmdVar = self.safeCall(forUserCmd=cmd, actor=actor, cmdStr=cmdStr)
+
+        data = []
+
+        for i in range(self.niter):
+            wait()
+            cmdVar = self.safeCall(forUserCmd=cmd, actor=actor, cmdStr=cmdStr)
+            data.append(newRow([list(keyVarDict[key].valueList) for key in keys]))
+
+        data = np.array(data)
+        #columns = sum([[f'{actor}__{key}__{val.name}' for val in keyVarDict[key].valueList] for key in keys], [])
+
+        return pd.DataFrame(data=data, columns=labels)
+
+    def genSample(self, cmd, df, fmt='{:g}'):
+        failed = []
+        for col in df.columns:
+
+            gen = cmd.inform
+            if 'None' in col:
+                continue
+            values = df[col].astype('float64')
+
+            if np.isnan(values.mean()):
+                gen = cmd.warn
+                failed.append(col)
+
+            gen("%s=%s,%s" % (col, fmt.format(values.mean()), fmt.format(values.std())))
+
+        if failed:
+            raise RuntimeError(f'{", ".join(failed)} are invalid')
 
     def reloadConfiguration(self, cmd):
         cmd.inform('sections=%08x,%r' % (id(self.config),
