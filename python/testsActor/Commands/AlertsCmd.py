@@ -6,7 +6,7 @@ import opscore.protocols.types as types
 from testsActor.utils import singleShot
 
 
-class EnuCmd(object):
+class AlertsCmd(object):
     def __init__(self, actor):
         # This lets us access the rest of the actor.
         self.actor = actor
