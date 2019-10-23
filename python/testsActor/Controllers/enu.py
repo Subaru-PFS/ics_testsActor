@@ -118,6 +118,15 @@ class enu(object):
                 if df[col].mean() < enu.biaThresh:
                     raise RuntimeError(f'{col} is not detecting light')
 
+            for shutter in ['', 'blue', 'red']:
+                wait()
+                cmd.inform(f'text="opening {shutter} shutter"')
+                try:
+                    self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr=f'shutters open {shutter}')
+                except RuntimeError:
+                    cmd.inform('text="INTERLOCK OK"')
+
+
         finally:
             self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='bia off')
 
@@ -143,6 +152,22 @@ class enu(object):
 
             if self.enuKey(smId=smId, key='transientTime') > 1.0:
                 raise ValueError(f'shutter {shutter} speed is too slow')
+
+        cmd.inform('text="Exposure OK, testing interlock..."')
+        for shutter in ['', 'blue', 'red']:
+            wait()
+            cmd.inform(f'text="opening {shutter} shutter"')
+            self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId,
+                                cmdStr=f'shutters open {shutter}')
+            cmd.inform('text="turning BIA ON"')
+            try:
+                self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='bia on')
+                raise ValueError('bia on command should have failed !!')
+            except RuntimeError:
+                cmd.inform('text="INTERLOCK OK"')
+                self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId,
+                                    cmdStr=f'shutters close {shutter}')
+
 
     def rexm(self, cmd, smId):
         cmd.inform('text="starting rexm-%s test' % smId)
