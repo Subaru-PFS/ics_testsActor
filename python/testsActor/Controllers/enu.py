@@ -12,12 +12,12 @@ class enu(object):
     probeNames = ['MOTOR_RDA',
                   'MOTOR_SHUTTER_B',
                   'MOTOR_SHUTTER_R',
-                  'BIA_BOX_UPPER',
-                  'BIA_BOX_LOWER',
-                  'FIBER_UNIT_BENCH_LEVEL',
+                  'BIA_BOX_TOP',
+                  'BIA_BOX_BOTTOM',
+                  'FIBER_UNIT_HEXAPOD_BOTTOM',
                   'FIBER_UNIT_HEXAPOD_TOP',
                   'FIBER_UNIT_FIBER_FRAME_TOP',
-                  'COLLIMATOR_FRAME_BENCH_LEVEL',
+                  'COLLIMATOR_FRAME_BOTTOM',
                   'COLLIMATOR_FRAME_TOP',
                   'BENCH_LEFT_TOP',
                   'BENCH_LEFT_BOTTOM',
@@ -27,7 +27,7 @@ class enu(object):
                   'BENCH_FAR_BOTTOM',
                   'BENCH_NEAR_TOP',
                   'BENCH_NEAR_BOTTOM',
-                  'BENCH_CENTRAL_BOTTOM',
+                  'BENCH_CENTRAL_TOP',
                   None]
     biaLabels = ['biaPhoto1', 'biaPhoto2']
     pduPort8 = [None, None, 'iisHgarVolts', 'iisHgarCurrent', 'iisHgarPower']
