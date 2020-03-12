@@ -97,7 +97,7 @@ class sps(object):
         if missing:
             raise RuntimeError(f'{", ".join(missing)} are missing')
 
-    def fileIO(self, cmd):
+    def fileIO(self, cmd, cam):
         cmd.inform('text="starting fileIO test')
 
     def start(self, *args, **kwargs):

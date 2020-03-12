@@ -1,12 +1,16 @@
 #!/usr/bin/env python
 
 
+from functools import partial
+
 import opscore.protocols.keys as keys
 import opscore.protocols.types as types
 from testsActor.utils import singleShot
 
 
 class EnuCmd(object):
+    testNames = ['temps', 'slit', 'bia', 'shutters', 'rexm', 'iis']
+
     def __init__(self, actor):
         # This lets us access the rest of the actor.
         self.actor = actor
@@ -16,14 +20,11 @@ class EnuCmd(object):
         # associated methods when matched. The callbacks will be
         # passed a single argument, the parsed and typed command.
         #
-        self.vocab = [
-            ('temps', '@(sm1|sm2|sm3|sm4)', self.temps),
-            ('slit', '@(sm1|sm2|sm3|sm4)', self.slit),
-            ('bia', '@(sm1|sm2|sm3|sm4)', self.bia),
-            ('shutters', '@(sm1|sm2|sm3|sm4)', self.shutters),
-            ('rexm', '@(sm1|sm2|sm3|sm4)', self.rexm),
-            ('iis', '@(sm1|sm2|sm3|sm4)', self.iis),
-        ]
+        self.vocab = []
+        for testName in EnuCmd.testNames:
+            testFunc = partial(self.testFunc, funcName=testName)
+            setattr(self, testName, testFunc)
+            self.vocab.append((testName, '@(sm1|sm2|sm3|sm4)', testFunc))
 
         self.keys = keys.KeysDictionary("tests__enu", (1, 1),
                                         keys.Key("smId", types.Int(),
@@ -37,7 +38,7 @@ class EnuCmd(object):
             raise RuntimeError('enu controller is not connected.')
 
     @singleShot
-    def temps(self, cmd):
+    def testFunc(self, cmd, funcName):
         cmdKeys = cmd.cmd.keywords
         smId = None
         smId = 'sm1' if 'sm1' in cmdKeys else smId
@@ -47,99 +48,10 @@ class EnuCmd(object):
         self.actor.requireModel(f'enu_{smId}', cmd)
 
         try:
-            self.controller.temps(cmd, smId=smId)
+            testFunc = getattr(self.controller, funcName)
+            testFunc(cmd, smId=smId)
         except:
-            cmd.warn('test=temps-%s,FAILED' % smId)
+            cmd.warn(f'test={funcName}-{smId},FAILED')
             raise
 
-        cmd.finish('test=temps-%s,OK' % smId)
-
-    @singleShot
-    def slit(self, cmd):
-        cmdKeys = cmd.cmd.keywords
-        smId = None
-        smId = 'sm1' if 'sm1' in cmdKeys else smId
-        smId = 'sm2' if 'sm2' in cmdKeys else smId
-        smId = 'sm3' if 'sm3' in cmdKeys else smId
-        smId = 'sm4' if 'sm4' in cmdKeys else smId
-        self.actor.requireModel(f'enu_{smId}', cmd)
-
-        try:
-            self.controller.slit(cmd, smId=smId)
-        except:
-            cmd.warn('test=slit-%s,FAILED' % smId)
-            raise
-
-        cmd.finish('test=slit-%s,OK' % smId)
-
-    @singleShot
-    def bia(self, cmd):
-        cmdKeys = cmd.cmd.keywords
-        smId = None
-        smId = 'sm1' if 'sm1' in cmdKeys else smId
-        smId = 'sm2' if 'sm2' in cmdKeys else smId
-        smId = 'sm3' if 'sm3' in cmdKeys else smId
-        smId = 'sm4' if 'sm4' in cmdKeys else smId
-        self.actor.requireModel(f'enu_{smId}', cmd)
-
-        try:
-            self.controller.bia(cmd, smId=smId)
-        except:
-            cmd.warn('test=bia-%s,FAILED' % smId)
-            raise
-
-        cmd.finish('test=bia-%s,OK' % smId)
-
-    @singleShot
-    def shutters(self, cmd):
-        cmdKeys = cmd.cmd.keywords
-        smId = None
-        smId = 'sm1' if 'sm1' in cmdKeys else smId
-        smId = 'sm2' if 'sm2' in cmdKeys else smId
-        smId = 'sm3' if 'sm3' in cmdKeys else smId
-        smId = 'sm4' if 'sm4' in cmdKeys else smId
-        self.actor.requireModel(f'enu_{smId}', cmd)
-
-        try:
-            self.controller.shutters(cmd, smId=smId)
-        except:
-            cmd.warn('test=shutters-%s,FAILED' % smId)
-            raise
-
-        cmd.finish('test=shutters-%s,OK' % smId)
-
-    @singleShot
-    def rexm(self, cmd):
-        cmdKeys = cmd.cmd.keywords
-        smId = None
-        smId = 'sm1' if 'sm1' in cmdKeys else smId
-        smId = 'sm2' if 'sm2' in cmdKeys else smId
-        smId = 'sm3' if 'sm3' in cmdKeys else smId
-        smId = 'sm4' if 'sm4' in cmdKeys else smId
-        self.actor.requireModel(f'enu_{smId}', cmd)
-
-        try:
-            self.controller.rexm(cmd, smId=smId)
-        except:
-            cmd.warn('test=rexm-%s,FAILED' % smId)
-            raise
-
-        cmd.finish('test=rexm-%s,OK' % smId)
-
-    @singleShot
-    def iis(self, cmd):
-        cmdKeys = cmd.cmd.keywords
-        smId = None
-        smId = 'sm1' if 'sm1' in cmdKeys else smId
-        smId = 'sm2' if 'sm2' in cmdKeys else smId
-        smId = 'sm3' if 'sm3' in cmdKeys else smId
-        smId = 'sm4' if 'sm4' in cmdKeys else smId
-        self.actor.requireModel(f'enu_{smId}', cmd)
-
-        try:
-            self.controller.iis(cmd, smId=smId)
-        except:
-            cmd.warn('test=iis-%s,FAILED' % smId)
-            raise
-
-        cmd.finish('test=iis-%s,OK' % smId)
+        cmd.finish(f'test={funcName}-{smId},OK')
