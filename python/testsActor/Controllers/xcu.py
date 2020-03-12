@@ -1,5 +1,6 @@
 import logging
 import time
+
 from testsActor.utils import waitForTcpServer
 
 
@@ -29,7 +30,8 @@ class xcu(object):
     interlockLabels = ['cryostatPressure', 'roughingPressure']
     ionpumpLabels = [None, 'ionpump1Volts', 'ionpump1Current', 'ionpump1Temps', 'ionpump1Pressure'] + \
                     [None, 'ionpump2Volts', 'ionpump2Current', 'ionpump2Temps', 'ionpump2Pressure']
-    otherCam = dict(r1='b1', b1='r1')
+    specIds = list(range(1, 5))
+    otherCam = dict([(f'r{i}', f'b{i}') for i in specIds] + [(f'b{i}', f'r{i}') for i in specIds])
     heaterLabels = [None, None, None, None] + ['heatersCcdEnabled', 'heatersSpreaderEnabled'] + \
                    ['heatersCcdFraction', 'heatersSpreaderFraction']
 

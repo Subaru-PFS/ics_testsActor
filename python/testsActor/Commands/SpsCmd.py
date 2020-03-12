@@ -8,7 +8,7 @@ from testsActor.utils import singleShot
 
 
 class SpsCmd(object):
-    testNames = ['fileIO', 'bias', 'dark', 'shutters', 'rexm', 'iis']
+    testNames = ['fileIO', 'bias', 'dark']
 
     def __init__(self, actor):
         # This lets us access the rest of the actor.
