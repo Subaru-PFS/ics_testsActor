@@ -51,7 +51,7 @@ class EnuCmd(object):
             testFunc = getattr(self.controller, funcName)
             testFunc(cmd, smId=smId)
         except:
-            cmd.warn(f'test={funcName}-{smId},FAILED')
+            cmd.warn(f'test={smId},{funcName},FAILED')
             raise
 
-        cmd.finish(f'test={funcName}-{smId},OK')
+        cmd.finish(f'test={smId},{funcName},OK')

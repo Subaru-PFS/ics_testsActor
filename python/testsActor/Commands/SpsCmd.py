@@ -46,7 +46,7 @@ class SpsCmd(object):
             testFunc = getattr(self.controller, funcName)
             testFunc(cmd, cam=cam)
         except:
-            cmd.warn(f'test={funcName}-{cam},FAILED')
+            cmd.warn(f'test={cam},{funcName},FAILED')
             raise
 
-        cmd.finish(f'test={funcName}-{cam},OK')
+        cmd.finish(f'test={cam},{funcName},OK')
