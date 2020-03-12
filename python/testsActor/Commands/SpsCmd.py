@@ -5,6 +5,7 @@ import opscore.protocols.keys as keys
 import opscore.protocols.types as types
 from testsActor.utils import singleShot
 
+
 class SpsCmd(object):
     def __init__(self, actor):
         # This lets us access the rest of the actor.
@@ -48,6 +49,8 @@ class SpsCmd(object):
     def bias(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'ccd_{cam}', cmd)
+
         try:
             self.controller.bias(cmd, cam=cam)
         except:
@@ -60,6 +63,8 @@ class SpsCmd(object):
     def dark(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'ccd_{cam}', cmd)
+
         try:
             self.controller.dark(cmd, cam=cam)
         except:

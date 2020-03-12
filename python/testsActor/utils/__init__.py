@@ -1,10 +1,22 @@
 import socket
 import time
-import numpy as np
 from functools import partial
 
+import numpy as np
 from actorcore.QThread import QThread
 from opscore.protocols import types
+
+specIds = list(range(1, 5))
+vis = [f'b{id}' for id in specIds] + [f'r{id}' for id in specIds]
+nir = [f'n{id}' for id in specIds]
+
+enus = [f'enu_sm{id}' for id in specIds]
+xcus = [f'xcu_{cam}' for cam in vis + nir]
+ccds = [f'ccd_{cam}' for cam in vis]
+hxs = [f'hx_{cam}' for cam in nir]
+
+existingModels = enus + xcus + ccds + hxs
+
 
 def wait():
     time.sleep(3)

@@ -44,6 +44,7 @@ class EnuCmd(object):
         smId = 'sm2' if 'sm2' in cmdKeys else smId
         smId = 'sm3' if 'sm3' in cmdKeys else smId
         smId = 'sm4' if 'sm4' in cmdKeys else smId
+        self.actor.requireModel(f'enu_{smId}', cmd)
 
         try:
             self.controller.temps(cmd, smId=smId)
@@ -61,6 +62,7 @@ class EnuCmd(object):
         smId = 'sm2' if 'sm2' in cmdKeys else smId
         smId = 'sm3' if 'sm3' in cmdKeys else smId
         smId = 'sm4' if 'sm4' in cmdKeys else smId
+        self.actor.requireModel(f'enu_{smId}', cmd)
 
         try:
             self.controller.slit(cmd, smId=smId)
@@ -78,6 +80,7 @@ class EnuCmd(object):
         smId = 'sm2' if 'sm2' in cmdKeys else smId
         smId = 'sm3' if 'sm3' in cmdKeys else smId
         smId = 'sm4' if 'sm4' in cmdKeys else smId
+        self.actor.requireModel(f'enu_{smId}', cmd)
 
         try:
             self.controller.bia(cmd, smId=smId)
@@ -95,6 +98,7 @@ class EnuCmd(object):
         smId = 'sm2' if 'sm2' in cmdKeys else smId
         smId = 'sm3' if 'sm3' in cmdKeys else smId
         smId = 'sm4' if 'sm4' in cmdKeys else smId
+        self.actor.requireModel(f'enu_{smId}', cmd)
 
         try:
             self.controller.shutters(cmd, smId=smId)
@@ -112,6 +116,7 @@ class EnuCmd(object):
         smId = 'sm2' if 'sm2' in cmdKeys else smId
         smId = 'sm3' if 'sm3' in cmdKeys else smId
         smId = 'sm4' if 'sm4' in cmdKeys else smId
+        self.actor.requireModel(f'enu_{smId}', cmd)
 
         try:
             self.controller.rexm(cmd, smId=smId)
@@ -129,6 +134,7 @@ class EnuCmd(object):
         smId = 'sm2' if 'sm2' in cmdKeys else smId
         smId = 'sm3' if 'sm3' in cmdKeys else smId
         smId = 'sm4' if 'sm4' in cmdKeys else smId
+        self.actor.requireModel(f'enu_{smId}', cmd)
 
         try:
             self.controller.iis(cmd, smId=smId)

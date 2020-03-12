@@ -43,6 +43,8 @@ class XcuCmd(object):
     def power(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'xcu_{cam}', cmd)
+
         try:
             self.controller.power(cmd, cam=cam)
         except:
@@ -55,6 +57,8 @@ class XcuCmd(object):
     def gatevalve(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'xcu_{cam}', cmd)
+
         try:
             self.controller.gatevalve(cmd, cam=cam)
         except:
@@ -67,6 +71,8 @@ class XcuCmd(object):
     def turbo(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'xcu_{cam}', cmd)
+
         try:
             self.controller.turbo(cmd, cam=cam)
         except:
@@ -79,6 +85,8 @@ class XcuCmd(object):
     def ionpump(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'xcu_{cam}', cmd)
+
         try:
             self.controller.ionpump(cmd, cam=cam)
         except:
@@ -91,6 +99,8 @@ class XcuCmd(object):
     def cooler(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'xcu_{cam}', cmd)
+
         try:
             self.controller.cooler(cmd, cam=cam)
         except:
@@ -103,6 +113,8 @@ class XcuCmd(object):
     def gauge(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'xcu_{cam}', cmd)
+
         try:
             self.controller.gauge(cmd, cam=cam)
         except:
@@ -115,6 +127,8 @@ class XcuCmd(object):
     def temps(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'xcu_{cam}', cmd)
+
         try:
             self.controller.temps(cmd, cam=cam)
         except:
@@ -127,6 +141,8 @@ class XcuCmd(object):
     def heaters(self, cmd):
         cmdKeys = cmd.cmd.keywords
         cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'xcu_{cam}', cmd)
+
         try:
             self.controller.heaters(cmd, cam=cam)
         except:

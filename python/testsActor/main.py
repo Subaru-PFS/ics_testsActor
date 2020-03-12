@@ -7,8 +7,7 @@ import logging
 import actorcore.ICC
 import numpy as np
 import pandas as pd
-
-from testsActor.utils import newRow, wait
+from testsActor.utils import newRow, wait, existingModels
 
 
 class OurActor(actorcore.ICC.ICC):
@@ -17,24 +16,17 @@ class OurActor(actorcore.ICC.ICC):
     def __init__(self, name, productName=None, configFile=None, logLevel=logging.INFO):
         # This sets up the connections to/from the hub, the logger, and the twisted reactor.
         #
-        specIds = [i + 1 for i in range(1)]
-        cams = ['b%i' % i for i in specIds] + ['r%i' % i for i in specIds]
-
-        enus = ['enu_sm%i' % i for i in specIds]
-        xcus = ['xcu_%s' % cam for cam in cams]
-        ccds = ['ccd_%s' % cam for cam in cams]
-
         actorcore.ICC.ICC.__init__(self, name,
                                    productName=productName,
-                                   configFile=configFile,
-                                   modelNames=enus + xcus + ccds)
+                                   configFile=configFile)
 
         self.logger.setLevel(logLevel)
-
         self.everConnected = False
 
     def requireModel(self, actorName, cmd):
         """ Make sure that we are listening for a given actor keywords. """
+        if actorName not in existingModels:
+            raise ValueError(f'{actorName} is not a valid model name')
 
         if actorName not in self.models.keys():
             cmd.inform(f"text='connecting model for actor {actorName}'")
@@ -66,7 +58,7 @@ class OurActor(actorcore.ICC.ICC):
             data.append(newRow([list(keyVarDict[key].valueList) for key in keys]))
 
         data = np.array(data)
-        #columns = sum([[f'{actor}__{key}__{val.name}' for val in keyVarDict[key].valueList] for key in keys], [])
+        # columns = sum([[f'{actor}__{key}__{val.name}' for val in keyVarDict[key].valueList] for key in keys], [])
 
         return pd.DataFrame(data=data, columns=labels)
 
