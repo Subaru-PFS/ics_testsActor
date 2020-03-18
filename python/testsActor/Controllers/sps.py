@@ -6,7 +6,7 @@ from astropy.io import fits
 
 class sps(object):
     fitsKeys = ['SIMPLE', 'BITPIX', 'NAXIS', 'NAXIS1', 'NAXIS2', 'HEADVERS', 'SPECNUM', 'DEWARNAM', 'ARM', 'DETNUM',
-                'DATE-OBS', 'IMAGETYP', 'EXPTIME', 'DARKTIME', 'W_PFDSGN', 'W_VISIT']
+                'DATE-OBS', 'IMAGETYP', 'EXPTIME', 'DARKTIME', 'W_PFDSGN', 'W_VISIT', 'W_RVXCU', 'W_RVCCD', 'W_RVENU']
 
     def __init__(self, actor, name, loglevel=logging.DEBUG):
         """This sets up the connections to/from the hub, the logger, and the twisted reactor.
