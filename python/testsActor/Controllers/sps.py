@@ -2,6 +2,7 @@ import logging
 import os
 
 from astropy.io import fits
+from testsActor.utils import checkDuplicate
 
 
 class sps(object):
@@ -58,7 +59,11 @@ class sps(object):
             gen(f'{key}={val}')
 
         if missing:
-            raise RuntimeError(f'{", ".join(missing)} are missing')
+            raise ValueError(f'{", ".join(missing)} are missing')
+
+        duplicates = checkDuplicate(list(prihdr.keys()))
+        if duplicates:
+            raise ValueError(f'{", ".join(duplicates)} duplicated')
 
     def dark(self, cmd, cam):
         missing = []
@@ -95,7 +100,11 @@ class sps(object):
             gen(f'{key}={val}')
 
         if missing:
-            raise RuntimeError(f'{", ".join(missing)} are missing')
+            raise ValueError(f'{", ".join(missing)} are missing')
+
+        duplicates = checkDuplicate(list(prihdr.keys()))
+        if duplicates:
+            raise ValueError(f'{", ".join(duplicates)} duplicated')
 
     def fileIO(self, cmd, cam):
         cmd.inform('text="starting fileIO test')

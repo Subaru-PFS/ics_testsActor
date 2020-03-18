@@ -18,6 +18,21 @@ hxs = [f'hx_{cam}' for cam in nir]
 existingModels = enus + xcus + ccds + hxs
 
 
+def checkDuplicate(keys):
+    ''' Check if header contains any duplicates but COMMENT'''
+    ignore = ['COMMENT']
+    setOfElems = set()
+    duplicate = []
+    for key in keys:
+        if key in ignore:
+            continue
+        elif key in setOfElems:
+            duplicate.append(key)
+        else:
+            setOfElems.add(key)
+    return duplicate
+
+
 def wait():
     time.sleep(3)
 
