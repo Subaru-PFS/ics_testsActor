@@ -6,8 +6,8 @@ from testsActor.utils import checkDuplicate
 
 
 class sps(object):
-    fitsKeys = ['SIMPLE', 'BITPIX', 'NAXIS', 'NAXIS1', 'NAXIS2', 'HEADVERS', 'SPECNUM', 'DEWARNAM', 'ARM', 'DETNUM',
-                'DATE-OBS', 'IMAGETYP', 'EXPTIME', 'DARKTIME', 'W_PFDSGN', 'W_VISIT', 'W_RVXCU', 'W_RVCCD', 'W_RVENU']
+    fitsKeys = ['SIMPLE', 'BITPIX', 'NAXIS', 'DETECTOR', 'W_VISIT', 'W_ARM', 'W_SPMOD', 'W_SITE',
+                'EXPTIME', 'DARKTIME', 'DATE-OBS', 'W_PFDSGN',  'W_RVXCU', 'W_RVCCD', 'W_RVENU']
 
     def __init__(self, actor, name, loglevel=logging.DEBUG):
         """This sets up the connections to/from the hub, the logger, and the twisted reactor.
@@ -29,18 +29,19 @@ class sps(object):
         missing = []
         cmd.inform('text="starting %s bias test' % cam)
 
-        self.actor.safeCall(forUserCmd=cmd, actor='sps', cmdStr=f'expose bias cam={cam}')
+        self.actor.safeCall(forUserCmd=cmd, actor='iic',
+                            cmdStr=f'bias cam={cam} name="R1 functest" comments="from testsActor"')
 
         [root, night, fname] = self.ccdKey(cam, 'filepath')
-        filepath = os.path.join(root, 'pfs', night, fname)
+        filepath = os.path.join(root, night, 'sps', fname)
 
         hdulist = fits.open(filepath, "readonly")
         prihdr = hdulist[0].header
 
         cmd.inform(f'filepath={filepath}')
 
-        if prihdr['IMAGETYP'] != 'bias':
-            raise ValueError(f'IMAGETYP is incorrected {prihdr["IMAGETYP"]}')
+        if prihdr['DATA-TYP'] != 'BIAS':
+            raise ValueError(f'DATA-TYP is incorrected {prihdr["DATA-TYP"]}')
 
         if prihdr['EXPTIME'] != 0:
             raise ValueError(f'EXPTIME is incorrected {prihdr["EXPTIME"]}')
@@ -70,18 +71,19 @@ class sps(object):
         exptime = 10.0
         cmd.inform('text="starting %s dark test' % cam)
 
-        self.actor.safeCall(forUserCmd=cmd, actor='sps', cmdStr=f'expose dark exptime={exptime} cam={cam}')
+        self.actor.safeCall(forUserCmd=cmd, actor='iic',
+                            cmdStr=f'dark exptime={exptime} cam={cam} name="R1 functest" comments="from testsActor"')
 
         [root, night, fname] = self.ccdKey(cam, 'filepath')
-        filepath = os.path.join(root, 'pfs', night, fname)
+        filepath = os.path.join(root, night, 'sps', fname)
 
         hdulist = fits.open(filepath, "readonly")
         prihdr = hdulist[0].header
 
         cmd.inform(f'filepath={filepath}')
 
-        if prihdr['IMAGETYP'] != 'dark':
-            raise ValueError(f'IMAGETYP is incorrected {prihdr["IMAGETYP"]}')
+        if prihdr['DATA-TYP'] != 'DARK':
+            raise ValueError(f'DATA-TYP is incorrected {prihdr["DATA-TYP"]}')
 
         if abs(prihdr['EXPTIME'] - exptime) > 0.5:
             raise ValueError(f'EXPTIME is incorrected {prihdr["EXPTIME"]}')
