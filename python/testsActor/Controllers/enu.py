@@ -198,7 +198,8 @@ class enu(object):
         self.actor.safeCall(forUserCmd=cmd, actor='enu_%s' % smId, cmdStr='iis start')
 
         for lamp in enu.lamps:
-            if self.enuKey(smId=smId, key=lamp):
+            state, seconds = self.enuKey(smId=smId, key=lamp)
+            if state:
                 raise ValueError(f'{lamp} should be off')
 
         cmd.inform('text="iis status OK, warming up lamp..."')
