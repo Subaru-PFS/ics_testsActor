@@ -31,7 +31,7 @@ class sps(object):
         cmd.inform('text="starting %s bias test' % cam)
 
         self.actor.safeCall(forUserCmd=cmd, actor='iic',
-                            cmdStr=f'bias cam={cam} name="R1 functest" comments="from testsActor"')
+                            cmdStr=f'bias cam={cam} name="{cam.upper()} functest" comments="from testsActor"')
 
         [root, night, fname] = self.ccdKey(cam, 'filepath')
         filepath = os.path.join(root, night, 'sps', fname)
@@ -101,7 +101,7 @@ class sps(object):
         cmd.inform('text="starting %s dark test' % cam)
 
         self.actor.safeCall(forUserCmd=cmd, actor='iic',
-                            cmdStr=f'dark exptime={exptime} cam={cam} name="R1 functest" comments="from testsActor"')
+                            cmdStr=f'dark exptime={exptime} cam={cam} name="{cam.upper()} functest" comments="from testsActor"')
 
         [root, night, fname] = self.ccdKey(cam, 'filepath')
         filepath = os.path.join(root, night, 'sps', fname)
