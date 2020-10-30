@@ -184,9 +184,14 @@ class sps(object):
 
     def tuneOffsets(self, cmd, cam, dryRun=False):
         cmd.inform('text="starting %s tuneOffsets' % cam)
-        self.actor.safeCall(forUserCmd=cmd, actor=f'ccd_{cam}',
-                            cmdStr='fee setOffsets n=%d,%d,%d,%d,%d,%d,%d,%d p=%d,%d,%d,%d,%d,%d,%d,%d'% tuple([0] * 8 + [-100] * 8))
+        m, r = [0] * 8, [-100] * 8
+        cmd.inform('text="applying master: %s"' % (m))
+        cmd.inform('text="applying refs  : %s"' % (r))
 
+        self.actor.safeCall(forUserCmd=cmd, actor=f'ccd_{cam}',
+                            cmdStr='fee setOffsets n=%d,%d,%d,%d,%d,%d,%d,%d p=%d,%d,%d,%d,%d,%d,%d,%d'% tuple(m+r))
+
+        cmd.inform('text="taking bias ..."')
         self.actor.safeCall(forUserCmd=cmd, actor='iic',
                             cmdStr=f'bias cam={cam} name="{cam.upper()} tuneOffsets" comments="from testsActor"')
 
