@@ -25,6 +25,9 @@ class SpsCmd(object):
             setattr(self, testName, testFunc)
             self.vocab.append((testName, '<cam>', testFunc))
 
+        self.vocab += [('tuneOffsets', '<cam> [@(dryrun)]', self.tuneOffsets)]
+        print(self.vocab)
+
         self.keys = keys.KeysDictionary("tests__sps", (1, 1),
                                         keys.Key("cam", types.String(),
                                                  help='camera to test'), )
@@ -50,3 +53,14 @@ class SpsCmd(object):
             raise
 
         cmd.finish(f'test={cam},{funcName},OK')
+
+    @singleShot
+    def tuneOffsets(self, cmd):
+        cmdKeys = cmd.cmd.keywords
+        cam = cmdKeys['cam'].values[0]
+        self.actor.requireModel(f'ccd_{cam}', cmd)
+        dryRun = 'dryrun' in cmdKeys
+        self.controller.tuneOffsets(cmd, cam=cam, dryRun=dryRun)
+        cmd.finish(f'text="{cam} tuning offsets done"')
+
+

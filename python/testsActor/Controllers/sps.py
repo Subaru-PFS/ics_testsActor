@@ -4,6 +4,20 @@ import os
 from astropy.io import fits
 from pfs.utils.opdb import opDB
 from testsActor.utils import checkDuplicate
+import fpga.geom as geom
+import testing.scopeProcedures as scopeTests
+import numpy as np
+
+def calcOffsets(filepath):
+    file = fits.open(filepath)
+
+    exp = geom.Exposure()
+    exp.image = file[1].data
+    exp.header = file[0].header
+    exp = geom.Exposure(exp)
+    ampIms, osIms, _ = exp.splitImage(doTrim=False)
+    meds = [np.median(amp) for amp in ampIms]
+    return scopeTests.calcOffsets1(meds)
 
 
 class sps(object):
@@ -167,6 +181,29 @@ class sps(object):
 
     def fileIO(self, cmd, cam):
         cmd.inform('text="starting fileIO test')
+
+    def tuneOffsets(self, cmd, cam, dryRun=False):
+        cmd.inform('text="starting %s tuneOffsets' % cam)
+        self.actor.safeCall(forUserCmd=cmd, actor=f'ccd_{cam}',
+                            cmdStr='fee setOffsets n=%d,%d,%d,%d,%d,%d,%d,%d p=%d,%d,%d,%d,%d,%d,%d,%d'% tuple([0] * 8 + [-100] * 8))
+
+        self.actor.safeCall(forUserCmd=cmd, actor='iic',
+                            cmdStr=f'bias cam={cam} name="{cam.upper()} tuneOffsets" comments="from testsActor"')
+
+        [root, night, fname] = self.ccdKey(cam, 'filepath')
+        filepath = os.path.join(root, night, 'sps', fname)
+        m, r = calcOffsets(filepath)
+        cmd.inform('text="applying master: %s"' % (m))
+        cmd.inform('text="applying refs  : %s"' % (r))
+        vlist = tuple(m) + tuple(r)
+
+        if not dryRun:
+            self.actor.safeCall(forUserCmd=cmd, actor=f'ccd_{cam}',
+                                cmdStr='fee setOffsets n=%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f '
+                                       'p=%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f,%0.2f save'% vlist)
+        else:
+            cmd.inform('text="dryrun set, so not actually applying offsets"')
+
 
     def start(self, *args, **kwargs):
         pass
