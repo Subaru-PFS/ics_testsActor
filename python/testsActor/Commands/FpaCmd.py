@@ -87,6 +87,9 @@ class FpaCmd(object):
             steps = posKey[3]
             microns = posKey[4]
 
+            if str(steps) == '(invalid)':
+                steps = 0
+
             stepPositions.append(steps)
             positions.append(microns)
             homeSwitches.append(homeSwitch)
