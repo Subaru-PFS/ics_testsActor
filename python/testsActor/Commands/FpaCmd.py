@@ -46,9 +46,8 @@ class FpaCmd(object):
         cmdVar = self.actor.cmdr.call(actor=actor, cmdStr=cmdString,
                                       forUserCmd=cmd, timeLim=timeLim)
         if cmdVar.didFail:
-            raise RuntimeError('command %s %r failed' % (actor, cmdString))
-            # cmd.fail('text=%s' % (qstr('Failed to expose with %s' % (cmdString))))
-            # return None
+            lastReply = cmdVar.lastReply.string.split(None, 2)[-1]
+            raise RuntimeError('command %s %s failed: %s' % (actor, cmdString, lastReply))
 
         return cmdVar
 
