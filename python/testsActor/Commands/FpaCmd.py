@@ -230,6 +230,7 @@ class FpaCmd(object):
         keys = cmd.cmd.keywords
         cam = keys['cam'].values[0]
         current = keys['current'].values[0] if 'current' in keys else None
+        doDeclare = 'doDeclare' in keys
         actor = 'xcu_%s' % (cam)
         if 'axis' in keys:
             axes = keys['axis'].values[0],
@@ -294,8 +295,9 @@ class FpaCmd(object):
         
         cmd.inform('text="fpa findRange: homing motors."')
         self.safeCmd(cmd, actor, f"motors home axes={','.join(axes)}", timeLim=60)
-        for a_i, a in enumerate(axes):
-            self.safeCmd(cmd, actor, f"motors setRange {a}={ranges[a_i]}")
+        if doDeclare:
+            for a_i, a in enumerate(axes):
+                self.safeCmd(cmd, actor, f"motors setRange {a}={ranges[a_i]}")
         cmd.inform('fpaMotorsOvershoot=%s,%d,%d,%d' % (cam, *overshoot))
         cmd.finish('fpaMotorsRange=%s,%d,%d,%d,%0.2f,%0.2f,%0.2f' % (cam,
                                                                      *ranges,
