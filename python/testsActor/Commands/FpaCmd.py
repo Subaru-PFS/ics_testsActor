@@ -46,9 +46,8 @@ class FpaCmd(object):
         cmdVar = self.actor.cmdr.call(actor=actor, cmdStr=cmdString,
                                       forUserCmd=cmd, timeLim=timeLim)
         if cmdVar.didFail:
-            raise RuntimeError('command %s %r failed' % (actor, cmdString))
-            # cmd.fail('text=%s' % (qstr('Failed to expose with %s' % (cmdString))))
-            # return None
+            lastReply = cmdVar.lastReply.string.split(None, 2)[-1]
+            raise RuntimeError('command %s %s failed: %s' % (actor, cmdString, lastReply))
 
         return cmdVar
 
@@ -66,7 +65,8 @@ class FpaCmd(object):
 
         Returns
         -------
-        positions : three positions
+        stepPositions : three ints
+        p[ositions : three floats
         homeSwitches : three booleans
         farSwitches : three booleans
         """
@@ -74,6 +74,7 @@ class FpaCmd(object):
         cmdFunc = getattr(cmd, replyLevel)
         model = self.actor.models[actor]
         self.safeCmd(cmd, actor, "motors status", timeLim=5)
+        stepPositions = []
         positions = []
         homeSwitches = []
         farSwitches = []
@@ -82,16 +83,34 @@ class FpaCmd(object):
             posKey = getattr(model, keyName)
             homeSwitch = posKey[1]
             farSwitch = posKey[2]
-            posVal = posKey[3]
+            steps = posKey[3]
+            microns = posKey[4]
 
-            positions.append(posVal)
+            if str(steps) == '(invalid)':
+                steps = 0
+
+            stepPositions.append(steps)
+            positions.append(microns)
             homeSwitches.append(homeSwitch)
             farSwitches.append(farSwitch)
-            cmdFunc('text="%s: %d %s %s %d"' % (legend, i+1,
-                                                homeSwitch, farSwitch, posVal))
+            cmdFunc('text="%s: %d %s %s %d %0.2f"' % (legend, i+1,
+                                                      homeSwitch, farSwitch,
+                                                      steps, microns))
 
-        return positions, homeSwitches, farSwitches
-        
+        return stepPositions, positions, homeSwitches, farSwitches
+
+    def _filterForAxes(self, allVals, axes=None):
+        """Return the values for a subset off axes. """
+
+        if axes is None:
+            axes = 'a', 'b', 'c'
+
+        vals = []
+        for a_i, a in enumerate(('a', 'b', 'c')):
+            if a in axes:
+                vals.append(allVals[a_i])
+        return vals
+
     def motorHome(self, cmd, cam, motor, doFinish=True):
         pass
     
@@ -140,7 +159,7 @@ class FpaCmd(object):
             cmd.inform('text="fpa checkRepeats: driving to near far limit."')
             self.safeCmd(cmd, actor, "motors move %s=%d" % (moveAxis, farDist), timeLim=30)
             nearFar = self.grabPositions(cmd, actor, f'loop {i+1} nearFar', replyLevel='debug')
-            if any(nearFar[-1]):
+            if any(self._filterForAxes(nearFar[-1], allAxes)):
                 cmd.fail('text="some axes hit the far switch: %s"' % (nearFar[-1]))
                 return
 
@@ -148,7 +167,7 @@ class FpaCmd(object):
             cmd.inform('text="fpa checkRepeats: driving to near home switch."')
             self.safeCmd(cmd, actor, "motors move %s=%d abs" % (moveAxis, nearDist), timeLim=30)
             nearHome = self.grabPositions(cmd, actor, f'loop {i+1} nearHome', replyLevel='debug')
-            if any(nearHome[1]):
+            if any(self._filterForAxes(nearHome[-2], allAxes)):
                 cmd.fail('text="some axes hit the home switch: %s"' % (nearHome[1]))
                 return
                 
@@ -211,8 +230,12 @@ class FpaCmd(object):
         keys = cmd.cmd.keywords
         cam = keys['cam'].values[0]
         current = keys['current'].values[0] if 'current' in keys else None
+        doDeclare = 'doDeclare' in keys
         actor = 'xcu_%s' % (cam)
-        axes = 'a','b','c'
+        if 'axis' in keys:
+            axes = keys['axis'].values[0],
+        else:
+            axes = 'a','b','c'
         
         farDist = 5000          # Onto far switch
         nearDist = 25
@@ -223,7 +246,7 @@ class FpaCmd(object):
         cmd.inform('text="fpa findRange: initializing and homing motors."')
         self.safeCmd(cmd, actor, "motors init", timeLim=5)
         time.sleep(1) 
-        self.safeCmd(cmd, actor, "motors home", timeLim=60)
+        self.safeCmd(cmd, actor, f"motors home axes={','.join(axes)}", timeLim=60)
         time.sleep(1) 
 
         if current is not None:
@@ -232,9 +255,11 @@ class FpaCmd(object):
                 self.safeCmd(cmd, actor, 'motors raw=aM%dm%dR' % (ax_i+1, current))
 
         cmd.inform('text="fpa findRange: driving past far limit."')
-        self.safeCmd(cmd, actor, "motors move piston=%d" % (farDist), timeLim=30)
+
+        axisArgs = ' '.join([f"{ax}={farDist}" for ax in axes])
+        self.safeCmd(cmd, actor, f"motors move {axisArgs}", timeLim=30)
         pastFar = self.grabPositions(cmd, actor, 'pastFar')
-        if not all(pastFar[-1]):
+        if not all(self._filterForAxes(pastFar[-1], axes)):
             cmd.fail('text="some axes are not on far limit: %s' % (pastFar[-1]))
             return
         time.sleep(1)
@@ -243,14 +268,15 @@ class FpaCmd(object):
         for ax in axes:
             self.safeCmd(cmd, actor, "motors toSwitch %s far clear" % (ax), timeLim=60)
         offFar = self.grabPositions(cmd, actor, 'offFar')
-        if any(offFar[-1]):
+        if any(self._filterForAxes(offFar[-1], axes)):
             cmd.fail('text="some axes are not off far limit: %s' % (offFar[-1]))
             return
         
         cmd.inform('text="fpa findRange: driving motors back to near home switch"')
-        self.safeCmd(cmd, actor, "motors move piston=%d abs force" % (nearDist), timeLim=30)
+        axisArgs = ' '.join([f"{ax}={nearDist}" for ax in axes])
+        self.safeCmd(cmd, actor, f"motors move {axisArgs} abs force", timeLim=30)
         nearHome = self.grabPositions(cmd, actor, 'nearHome')
-        if any(nearHome[1]):
+        if any(self._filterForAxes(nearHome[-2], axes)):
             cmd.fail('text="some axes are on home limit: %s' % (nearHome[1]))
             return
         
@@ -258,17 +284,19 @@ class FpaCmd(object):
         for ax in axes:
             self.safeCmd(cmd, actor, "motors toSwitch %s home set" % (ax), timeLim=15)
         onHome = self.grabPositions(cmd, actor, 'onHome')
-        if not all(onHome[1]):
-            cmd.fail('text="some axes are not on home limit: %s' % (onHome[1]))
-            return
-        
+        if not all(self._filterForAxes(onHome[-2], axes)):
+            cmd.warn('text="some axes do not have the home limit set: %s' % (onHome[1]))
+
         ranges = [offFar[0][i] - onHome[0][i] - 1 for i in range(3)]
         overshoot = [pastFar[0][i] - offFar[0][i] - 1 for i in range(3)]
-        
+        rangesMicrons = [offFar[1][i] - onHome[1][i] - 1 for i in range(3)]
+
         cmd.inform('text="fpa findRange: homing motors."')
-        self.safeCmd(cmd, actor, "motors home", timeLim=60)
-        cmd.inform('fpaMotorsOvershoot=%s,%d,%d,%d' % (cam, overshoot[0],
-                                                       overshoot[1],
-                                                       overshoot[2]))
-        cmd.finish('fpaMotorsRange=%s,%d,%d,%d' % (cam,
-                                                   ranges[0], ranges[1], ranges[2]))
+        self.safeCmd(cmd, actor, f"motors home axes={','.join(axes)}", timeLim=60)
+        if doDeclare:
+            for a_i, a in enumerate(axes):
+                self.safeCmd(cmd, actor, f"motors setRange {a}={ranges[a_i]}")
+        cmd.inform('fpaMotorsOvershoot=%s,%d,%d,%d' % (cam, *overshoot))
+        cmd.finish('fpaMotorsRange=%s,%d,%d,%d,%0.2f,%0.2f,%0.2f' % (cam,
+                                                                     *ranges,
+                                                                     *rangesMicrons))

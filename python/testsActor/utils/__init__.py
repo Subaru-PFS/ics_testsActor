@@ -6,7 +6,14 @@ import numpy as np
 from actorcore.QThread import QThread
 from opscore.protocols import types
 
+from pfs.utils import spectroIds
+
 specIds = list(range(1, 5))
+
+# Support some JHU test cryostats.
+if spectroIds.getSite() == 'J':
+    specIds = specIds + [8, 9]
+
 vis = [f'b{id}' for id in specIds] + [f'r{id}' for id in specIds]
 nir = [f'n{id}' for id in specIds]
 
