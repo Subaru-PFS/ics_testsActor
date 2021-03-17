@@ -285,14 +285,12 @@ class FpaCmd(object):
             self.safeCmd(cmd, actor, "motors toSwitch %s home set" % (ax), timeLim=15)
         onHome = self.grabPositions(cmd, actor, 'onHome')
         if not all(self._filterForAxes(onHome[-2], axes)):
-            cmd.fail('text="some axes are not on home limit: %s' % (onHome[1]))
-            return
-        
+            cmd.warn('text="some axes do not have the home limit set: %s' % (onHome[1]))
+
         ranges = [offFar[0][i] - onHome[0][i] - 1 for i in range(3)]
         overshoot = [pastFar[0][i] - offFar[0][i] - 1 for i in range(3)]
         rangesMicrons = [offFar[1][i] - onHome[1][i] - 1 for i in range(3)]
-        overshootMicrons = [pastFar[1][i] - offFar[1][i] - 1 for i in range(3)]
-        
+
         cmd.inform('text="fpa findRange: homing motors."')
         self.safeCmd(cmd, actor, f"motors home axes={','.join(axes)}", timeLim=60)
         if doDeclare:
