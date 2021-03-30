@@ -1,6 +1,7 @@
 import logging
 import os
 import time
+
 import fpga.geom as geom
 import numpy as np
 import testing.scopeProcedures as scopeTests
@@ -27,7 +28,8 @@ def calcOffsets(filepath):
 
 class sps(object):
     fitsKeys = ['SIMPLE', 'BITPIX', 'NAXIS', 'DETECTOR', 'W_VISIT', 'W_ARM', 'W_SPMOD', 'W_SITE',
-                'EXPTIME', 'DARKTIME', 'DATE-OBS', 'W_PFDSGN', 'W_RVXCU', 'W_RVCCD', 'W_RVENU']
+                'EXPTIME', 'DARKTIME', 'DATE-OBS', 'W_PFDSGN', 'W_RVXCU', 'W_RVCCD', 'W_RVENU', 'W_SBEMDT',
+                'W_SFPADT', 'W_SHEXDT', 'W_SGRTDT']
 
     def __init__(self, actor, name, loglevel=logging.DEBUG):
         """This sets up the connections to/from the hub, the logger, and the twisted reactor.
@@ -45,12 +47,30 @@ class sps(object):
     def ccdKey(self, cam, key):
         return self.actor.models['ccd_%s' % cam].keyVarDict[key].getValue()
 
+    def isUndefined(self, hdr, key):
+        """Check for undefined header keys"""
+        try:
+            val = hdr[key]
+            if isinstance(val, float) and np.isnan(val):
+                raise KeyError
+            if isinstance(val, float) and val == float(9998):
+                raise KeyError
+            elif isinstance(val, int) and val == 9998:
+                raise KeyError
+            elif isinstance(val, str) and 'no available value' in val:
+                raise KeyError
+
+        except KeyError:
+            val = 'Undefined'
+
+        return val
+
     def bias(self, cmd, cam):
         missing = []
         cmd.inform('text="starting %s bias test' % cam)
 
         self.actor.safeCall(forUserCmd=cmd, actor='iic',
-                            cmdStr=f'bias cam={cam} name="{cam.upper()} functest" comments="from testsActor"')
+                            cmdStr=f'bias cam={cam} doTest name="{cam.upper()} functest" comments="from testsActor"')
 
         [root, night, fname] = self.ccdKey(cam, 'filepath')
         filepath = os.path.join(root, night, 'sps', fname)
@@ -60,7 +80,7 @@ class sps(object):
 
         cmd.inform(f'filepath={filepath}')
 
-        if prihdr['DATA-TYP'] != 'BIAS':
+        if prihdr['DATA-TYP'] != 'TEST':
             raise ValueError(f'DATA-TYP is incorrected {prihdr["DATA-TYP"]}')
 
         if prihdr['EXPTIME'] != 0:
@@ -68,16 +88,13 @@ class sps(object):
 
         for key in sps.fitsKeys:
             gen = cmd.inform
-            try:
-                val = prihdr[key]
-            except KeyError:
-                val = 'Undefined'
 
-            if 'Undefined' in str(val):
+            value = self.isUndefined(prihdr, key)
+            if 'Undefined' in str(value):
                 missing.append(key)
                 gen = cmd.warn
 
-            gen(f'{key}={val}')
+            gen(f'{key}={value}')
 
         if missing:
             raise ValueError(f'{", ".join(missing)} are missing')
@@ -100,8 +117,8 @@ class sps(object):
             f'sps_visit.pfs_visit_id inner join sps_camera on sps_exposure.sps_camera_id = sps_camera.sps_camera_id '
             f'where sps_exposure.pfs_visit_id={pfs_visit_id}')
 
-        if exptype != 'bias':
-            raise ValueError(f'opDB exp_type:{exptype} !=bias')
+        if exptype != 'test':
+            raise ValueError(f'opDB exp_type : {exptype}!=test')
 
         if round(float(exptime)) != 0:
             raise ValueError(f'opDB exptime:{exptime} does not match exptime:0')
@@ -120,7 +137,7 @@ class sps(object):
         cmd.inform('text="starting %s dark test' % cam)
 
         self.actor.safeCall(forUserCmd=cmd, actor='iic',
-                            cmdStr=f'dark exptime={exptime} cam={cam} name="{cam.upper()} functest" comments="from testsActor"')
+                            cmdStr=f'dark exptime={exptime} cam={cam} doTest name="{cam.upper()} functest" comments="from testsActor"')
 
         [root, night, fname] = self.ccdKey(cam, 'filepath')
         filepath = os.path.join(root, night, 'sps', fname)
@@ -130,7 +147,7 @@ class sps(object):
 
         cmd.inform(f'filepath={filepath}')
 
-        if prihdr['DATA-TYP'] != 'DARK':
+        if prihdr['DATA-TYP'] != 'TEST':
             raise ValueError(f'DATA-TYP is incorrected {prihdr["DATA-TYP"]}')
 
         if abs(prihdr['EXPTIME'] - exptime) > 0.5:
@@ -138,16 +155,12 @@ class sps(object):
 
         for key in sps.fitsKeys:
             gen = cmd.inform
-            try:
-                val = prihdr[key]
-            except KeyError:
-                val = 'Undefined'
-
-            if 'Undefined' in str(val):
+            value = self.isUndefined(prihdr, key)
+            if 'Undefined' in str(value):
                 missing.append(key)
                 gen = cmd.warn
 
-            gen(f'{key}={val}')
+            gen(f'{key}={value}')
 
         if missing:
             raise ValueError(f'{", ".join(missing)} are missing')
@@ -170,8 +183,8 @@ class sps(object):
             f'sps_visit.pfs_visit_id inner join sps_camera on sps_exposure.sps_camera_id = sps_camera.sps_camera_id '
             f'where sps_exposure.pfs_visit_id={pfs_visit_id}')
 
-        if exptype != 'dark':
-            raise ValueError(f'opDB exp_type:{exptype} !=dark')
+        if exptype != 'test':
+            raise ValueError(f'opDB exp_type : {exptype}!=test')
 
         if round(float(exp_time)) != round(exptime):
             raise ValueError(f'opDB exptime:{exp_time} does not match exptime:{exptime}')
