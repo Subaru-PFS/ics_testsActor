@@ -1,28 +1,26 @@
-import logging
-import os
-import time
-
 import fpga.geom as geom
+import logging
 import numpy as np
+import os
 import testing.scopeProcedures as scopeTests
+import time
 from astropy.io import fits
 from pfs.utils.opdb import opDB
 from testsActor.utils import checkDuplicate
 
 
-def ampBiasLevel(filepath):
-    file = fits.open(filepath)
-
+def ampBiasLevel(hdulist):
     exp = geom.Exposure()
-    exp.image = file[1].data
-    exp.header = file[0].header
+    exp.image = hdulist[1].data
+    exp.header = hdulist[0].header
     exp = geom.Exposure(exp)
     ampIms, osIms, _ = exp.splitImage(doTrim=False)
     return [np.median(amp) for amp in ampIms]
 
 
 def calcOffsets(filepath):
-    meds = ampBiasLevel(filepath)
+    hdulist = fits.open(filepath)
+    meds = ampBiasLevel(hdulist)
     return scopeTests.calcOffsets1(meds)
 
 
@@ -77,6 +75,9 @@ class sps(object):
 
         hdulist = fits.open(filepath, "readonly")
         prihdr = hdulist[0].header
+
+        levels = ampBiasLevel(hdulist)
+        self.genBiasLevel(cmd, levels)
 
         cmd.inform(f'filepath={filepath}')
 
@@ -144,6 +145,9 @@ class sps(object):
 
         hdulist = fits.open(filepath, "readonly")
         prihdr = hdulist[0].header
+
+        levels = ampBiasLevel(hdulist)
+        self.genBiasLevel(cmd, levels)
 
         cmd.inform(f'filepath={filepath}')
 
@@ -239,10 +243,14 @@ class sps(object):
 
             [root, night, fname] = self.ccdKey(cam, 'filepath')
             filepath = os.path.join(root, night, 'sps', fname)
-            levels = ampBiasLevel(filepath)
-            cmd.inform('text="biasLevel should be ~1000 ADU within 15%"')
-            cmd.inform(f"biasLevels={','.join([str(round(l)) for l in levels])}")
-            cmd.inform(f"biasLevelRatio={','.join([str(round(l)) for l in np.array(levels) / 10])}")
+            hdulist = fits.open(filepath)
+            levels = ampBiasLevel(hdulist)
+            self.genBiasLevel(cmd, levels)
+
+    def genBiasLevel(cmd, levels):
+        cmd.inform('text="biasLevel should be ~1000 ADU within 15%"')
+        cmd.inform(f"biasLevels={','.join([str(round(l)) for l in levels])}")
+        cmd.inform(f"biasLevelRatio={','.join([str(round(l)) for l in np.array(levels) / 10])}")
 
     def start(self, *args, **kwargs):
         pass
