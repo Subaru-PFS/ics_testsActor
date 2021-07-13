@@ -247,7 +247,7 @@ class sps(object):
             levels = ampBiasLevel(hdulist)
             self.genBiasLevel(cmd, levels)
 
-    def genBiasLevel(cmd, levels):
+    def genBiasLevel(self, cmd, levels):
         cmd.inform('text="biasLevel should be ~1000 ADU within 15%"')
         cmd.inform(f"biasLevels={','.join([str(round(l)) for l in levels])}")
         cmd.inform(f"biasLevelRatio={','.join([str(round(l)) for l in np.array(levels) / 10])}")
