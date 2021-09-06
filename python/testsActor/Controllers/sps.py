@@ -104,8 +104,8 @@ class sps(object):
         if duplicates:
             raise ValueError(f'{", ".join(duplicates)} duplicated')
 
-        visit_set_id, = opDB.fetchone('select max(visit_set_id) from sps_sequence')
-        seqtype, = opDB.fetchone(f'select sequence_type from sps_sequence where visit_set_id={visit_set_id}')
+        visit_set_id, = opDB.fetchone('select max(visit_set_id) from iic_sequence')
+        seqtype, = opDB.fetchone(f'select sequence_type from iic_sequence where visit_set_id={visit_set_id}')
         if seqtype != 'biases':
             raise ValueError(f'sequence_type:{seqtype} !=biases')
 
@@ -173,8 +173,8 @@ class sps(object):
         if duplicates:
             raise ValueError(f'{", ".join(duplicates)} duplicated')
 
-        visit_set_id, = opDB.fetchone('select max(visit_set_id) from sps_sequence')
-        seqtype, = opDB.fetchone(f'select sequence_type from sps_sequence where visit_set_id={visit_set_id}')
+        visit_set_id, = opDB.fetchone('select max(visit_set_id) from iic_sequence')
+        seqtype, = opDB.fetchone(f'select sequence_type from iic_sequence where visit_set_id={visit_set_id}')
         if seqtype != 'darks':
             raise ValueError(f'sequence_type:{seqtype} !=darks')
 
