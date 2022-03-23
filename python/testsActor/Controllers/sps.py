@@ -6,7 +6,7 @@ import fpga.geom as geom
 import numpy as np
 import testing.scopeProcedures as scopeTests
 from astropy.io import fits
-from pfs.utils.opdb import opDB
+from ics.utils.opdb import opDB
 from testsActor.utils import checkDuplicate
 
 
