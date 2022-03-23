@@ -1,9 +1,10 @@
-import fpga.geom as geom
 import logging
-import numpy as np
 import os
-import testing.scopeProcedures as scopeTests
 import time
+
+import fpga.geom as geom
+import numpy as np
+import testing.scopeProcedures as scopeTests
 from astropy.io import fits
 from pfs.utils.opdb import opDB
 from testsActor.utils import checkDuplicate
@@ -88,6 +89,10 @@ class sps(object):
             raise ValueError(f'EXPTIME is incorrected {prihdr["EXPTIME"]}')
 
         for key in sps.fitsKeys:
+            if key == 'W_SGRTDT' and cam[0] in ['b', 'n']:
+                # dont care about red grating in that case.
+                continue
+
             gen = cmd.inform
 
             value = self.isUndefined(prihdr, key)
