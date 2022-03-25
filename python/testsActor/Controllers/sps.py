@@ -46,26 +46,47 @@ class sps(object):
     def ccdKey(self, cam, key):
         return self.actor.models['ccd_%s' % cam].keyVarDict[key].getValue()
 
-    def isUndefined(self, hdr, key):
-        """Check for undefined header keys"""
-        try:
-            val = hdr[key]
-            if isinstance(val, float) and np.isnan(val):
-                raise KeyError
-            if isinstance(val, float) and val == float(9998):
-                raise KeyError
-            elif isinstance(val, int) and val == 9998:
-                raise KeyError
-            elif isinstance(val, str) and 'no available value' in val:
-                raise KeyError
+    def missingFitsKeys(self, cmd, header, cam):
+        """Check that the pre-defined fits keys are filled in."""
 
-        except KeyError:
-            val = 'Undefined'
+        def isUndefined(header, key):
+            """Check for undefined header keys"""
+            try:
+                val = header[key]
+                if isinstance(val, float) and np.isnan(val):
+                    raise KeyError
+                if isinstance(val, float) and val == float(9998):
+                    raise KeyError
+                elif isinstance(val, int) and val == 9998:
+                    raise KeyError
+                elif isinstance(val, str) and 'no available value' in val:
+                    raise KeyError
 
-        return val
+            except KeyError:
+                val = 'Undefined'
+
+            return val
+
+        missing = []
+
+        for key in sps.fitsKeys:
+            if key == 'W_SGRTDT' and cam[0] in ['b', 'n']:
+                # dont care about red grating in that case.
+                continue
+
+            gen = cmd.inform
+
+            value = isUndefined(header, key)
+            if 'Undefined' in str(value):
+                missing.append(key)
+                gen = cmd.warn
+
+            gen(f'{key}={value}')
+
+        return missing
 
     def bias(self, cmd, cam):
-        missing = []
+        """Take a bias and perform a series of sanity check, checking bias level, headers, opdb..."""
         cmd.inform('text="starting %s bias test' % cam)
 
         self.actor.safeCall(forUserCmd=cmd, actor='iic',
@@ -88,20 +109,8 @@ class sps(object):
         if prihdr['EXPTIME'] != 0:
             raise ValueError(f'EXPTIME is incorrected {prihdr["EXPTIME"]}')
 
-        for key in sps.fitsKeys:
-            if key == 'W_SGRTDT' and cam[0] in ['b', 'n']:
-                # dont care about red grating in that case.
-                continue
-
-            gen = cmd.inform
-
-            value = self.isUndefined(prihdr, key)
-            if 'Undefined' in str(value):
-                missing.append(key)
-                gen = cmd.warn
-
-            gen(f'{key}={value}')
-
+        # check for missing fits keys.
+        missing = self.missingFitsKeys(cmd, prihdr, cam=cam)
         if missing:
             raise ValueError(f'{", ".join(missing)} are missing')
 
@@ -137,9 +146,8 @@ class sps(object):
 
         cmd.inform('text="opDB book-keeping OK')
 
-    def dark(self, cmd, cam):
-        missing = []
-        exptime = 10.0
+    def dark(self, cmd, cam, exptime=10.0):
+        """Take a dark and perform a series of sanity check, checking bias level, headers, opdb..."""
         cmd.inform('text="starting %s dark test' % cam)
 
         self.actor.safeCall(forUserCmd=cmd, actor='iic',
@@ -160,17 +168,10 @@ class sps(object):
             raise ValueError(f'DATA-TYP is incorrected {prihdr["DATA-TYP"]}')
 
         if abs(prihdr['EXPTIME'] - exptime) > 0.5:
-            raise ValueError(f'EXPTIME is incorrected {prihdr["EXPTIME"]}')
+            raise ValueError(f'EXPTIME is incorrect {prihdr["EXPTIME"]} (should be {exptime})')
 
-        for key in sps.fitsKeys:
-            gen = cmd.inform
-            value = self.isUndefined(prihdr, key)
-            if 'Undefined' in str(value):
-                missing.append(key)
-                gen = cmd.warn
-
-            gen(f'{key}={value}')
-
+        # check for missing fits keys.
+        missing = self.missingFitsKeys(cmd, prihdr, cam=cam)
         if missing:
             raise ValueError(f'{", ".join(missing)} are missing')
 
