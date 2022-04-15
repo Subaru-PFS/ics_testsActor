@@ -234,6 +234,13 @@ class xcu(object):
         df = self.actor.sampleData(cmd, actor=f'xcu_{cam}', cmdStr='temps status', keys=keys, labels=labels)
         self.actor.genSample(cmd=cmd, df=df)
 
+        # checking for bad sensors
+        meanValues = df.mean()
+        bads = [col for col in df.columns if 'None' not in col and float(meanValues[col]) == 400]
+
+        if bads:
+            raise ValueError(f'{",".join(bads)} sensors have invalid reading (400K)!')
+
         self.actor.safeCall(forUserCmd=cmd, actor=f'xcu_{cam}', cmdStr='monitor controllers=temps period=15')
 
     def heaters(self, cmd, cam):
