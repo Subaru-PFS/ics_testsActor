@@ -6,7 +6,7 @@ import numpy as np
 from actorcore.QThread import QThread
 from opscore.protocols import types
 
-from pfs.utils import spectroIds
+from ics.utils.sps import spectroIds
 
 specIds = list(range(1, 5))
 

@@ -118,12 +118,12 @@ class sps(object):
         if duplicates:
             raise ValueError(f'{", ".join(duplicates)} duplicated')
 
-        visit_set_id, = opDB.fetchone('select max(visit_set_id) from iic_sequence')
-        seqtype, = opDB.fetchone(f'select sequence_type from iic_sequence where visit_set_id={visit_set_id}')
+        iic_sequence_id, = opDB.fetchone('select max(iic_sequence_id) from iic_sequence')
+        seqtype, = opDB.fetchone(f'select sequence_type from iic_sequence where iic_sequence_id={iic_sequence_id}')
         if seqtype != 'biases':
             raise ValueError(f'sequence_type:{seqtype} !=biases')
 
-        pfs_visit_id, = opDB.fetchone(f'select pfs_visit_id from visit_set where visit_set_id={visit_set_id}')
+        pfs_visit_id, = opDB.fetchone(f'select pfs_visit_id from visit_set where iic_sequence_id={iic_sequence_id}')
         if int(pfs_visit_id) != int(prihdr['W_VISIT']):
             raise ValueError(f'W_VISIT :{prihdr["W_VISIT"]} does not match opDB visit :{pfs_visit_id}')
 
@@ -179,12 +179,12 @@ class sps(object):
         if duplicates:
             raise ValueError(f'{", ".join(duplicates)} duplicated')
 
-        visit_set_id, = opDB.fetchone('select max(visit_set_id) from iic_sequence')
-        seqtype, = opDB.fetchone(f'select sequence_type from iic_sequence where visit_set_id={visit_set_id}')
+        iic_sequence_id, = opDB.fetchone('select max(iic_sequence_id) from iic_sequence')
+        seqtype, = opDB.fetchone(f'select sequence_type from iic_sequence where iic_sequence_id={iic_sequence_id}')
         if seqtype != 'darks':
             raise ValueError(f'sequence_type:{seqtype} !=darks')
 
-        pfs_visit_id, = opDB.fetchone(f'select pfs_visit_id from visit_set where visit_set_id={visit_set_id}')
+        pfs_visit_id, = opDB.fetchone(f'select pfs_visit_id from visit_set where iic_sequence_id={iic_sequence_id}')
         if int(pfs_visit_id) != int(prihdr['W_VISIT']):
             raise ValueError(f'W_VISIT :{prihdr["W_VISIT"]} does not match opDB visit :{pfs_visit_id}')
 
