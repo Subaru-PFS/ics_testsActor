@@ -11,6 +11,7 @@ from testsActor.utils import newRow, wait, existingModels
 
 
 class OurActor(actorcore.ICC.ICC):
+    knownControllers = ['xcu', 'enu', 'sps', 'alerts']
     niter = 3
 
     def __init__(self, name, productName=None, configFile=None, logLevel=logging.INFO):
@@ -87,7 +88,12 @@ class OurActor(actorcore.ICC.ICC):
     def connectionMade(self):
         if self.everConnected is False:
             logging.info("Attaching all controllers...")
-            self.allControllers = [s.strip() for s in self.config.get(self.name, 'startingControllers').split(',')]
+            try:
+                ignoreControllers = self.actorConfig['icc']['ignoreControllers']
+            except KeyError:
+                ignoreControllers = []
+
+            self.allControllers = list(set(self.knownControllers) - set(ignoreControllers))
             self.attachAllControllers()
             self.everConnected = True
 
